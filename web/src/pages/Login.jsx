@@ -130,6 +130,12 @@ export default function Login({ mode = 'login' }) {
             </button>
           </form>
 
+          {isSignup && (
+            <p className="muted small">
+              By creating an account you accept the <Link className="link accent" to="/privacy">privacy notice and terms</Link>. Vectes is not investment advice.
+            </p>
+          )}
+
           {error && <p className="auth-error" role="alert">{error}</p>}
           {notice && <p className="auth-notice" role="status">{notice}</p>}
 

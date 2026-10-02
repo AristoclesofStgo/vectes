@@ -9,6 +9,8 @@ import { useAuth, hasAccess, takeDestination } from './lib/auth.js'
 
 // Each page is its own chunk so visitors only download the charts they open
 const Login = lazy(() => import('./pages/Login.jsx'))
+const Privacy = lazy(() => import('./pages/Privacy.jsx'))
+const Account = lazy(() => import('./pages/Account.jsx'))
 const Market = lazy(() => import('./tabs/Market.jsx'))
 const Analysis = lazy(() => import('./tabs/Analysis.jsx'))
 const Portfolio = lazy(() => import('./tabs/Portfolio.jsx'))
@@ -61,6 +63,7 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login mode="login" />} />
         <Route path="/signup" element={<Login mode="signup" />} />
+        <Route path="/privacy" element={<Privacy />} />
         <Route element={<RequireAuth />}>
           <Route element={<AppLayout />}>
             <Route path="/market" element={<Market />} />
@@ -68,6 +71,7 @@ export default function App() {
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/journal" element={<Journal />} />
             <Route path="/data-lab" element={<DataLab />} />
+            <Route path="/account" element={<Account />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

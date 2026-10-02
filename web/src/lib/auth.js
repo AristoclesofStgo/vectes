@@ -110,6 +110,14 @@ export const useAuth = create((set) => ({
     return session
   },
 
+  // Permanently deletes the Supabase user and, by cascade, everything they stored
+  deleteAccount: async () => {
+    const { data, error } = await supabase.functions.invoke('delete-account', { method: 'POST' })
+    if (error || !data?.ok) throw error ?? new Error('delete-account failed')
+    set({ session: null, signedOut: true })
+    await supabase.auth.signOut({ scope: 'local' }) // the user no longer exists server-side
+  },
+
   signOut: async () => {
     set({ session: null, signedOut: true })
     await supabase.auth.signOut()

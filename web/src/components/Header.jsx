@@ -47,13 +47,13 @@ function Account() {
   const left = daysLeft(session)
   return (
     <div className="account">
-      {session.kind === 'demo' ? (
-        <span className="badge" title="Demo access expires after 7 days">
-          Demo · {left} {left === 1 ? 'day' : 'days'} left
-        </span>
-      ) : (
-        <span className="account-email muted small hide-sm" title={session.email}>{session.email}</span>
-      )}
+      <NavLink to="/account" className="account-link" title="Your account">
+        {session.kind === 'demo' ? (
+          <span className="badge">Demo · {left} {left === 1 ? 'day' : 'days'} left</span>
+        ) : (
+          <span className="account-email muted small hide-sm">{session.email}</span>
+        )}
+      </NavLink>
       <button className="button ghost" onClick={signOut}>Sign out</button>
     </div>
   )

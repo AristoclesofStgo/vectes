@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import Logo from './Logo.jsx'
 
 export default function Footer() {
@@ -10,6 +11,7 @@ export default function Footer() {
           Original pipeline: AWS Lambda, S3, EventBridge and Snowflake.
           For educational purposes only — not investment advice.
         </p>
+        <Link className="muted link" to="/privacy">Privacy &amp; terms</Link>
         <a className="muted link" href="https://github.com/AristoclesofStgo/vectes" target="_blank" rel="noreferrer">
           Source on GitHub
         </a>

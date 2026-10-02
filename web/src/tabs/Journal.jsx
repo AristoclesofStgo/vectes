@@ -8,7 +8,8 @@ import Breakdown from '../components/journal/Breakdown.jsx'
 import TradeChart from '../components/journal/TradeChart.jsx'
 import TradesTable from '../components/journal/TradesTable.jsx'
 import StatementImport from '../components/journal/StatementImport.jsx'
-import { listAccounts, listCashFlows, listTrades } from '../lib/journal.js'
+import ConfirmDelete from '../components/ConfirmDelete.jsx'
+import { deleteTradingAccount, listAccounts, listCashFlows, listTrades } from '../lib/journal.js'
 import { journalStats, startingBalance } from '../lib/journalStats.js'
 import { useJson } from '../lib/data.js'
 import { useStore } from '../store.js'
@@ -45,6 +46,7 @@ export default function Journal() {
   const [error, setError] = useState(null)
   const [focus, setFocus] = useState(null)
   const [version, setVersion] = useState(0) // bumped after an import to reload everything
+  const [removing, setRemoving] = useState(false)
 
   const loadAccounts = useCallback((prefer) => listAccounts().then(
     (list) => {
@@ -75,6 +77,16 @@ export default function Journal() {
     setVersion((v) => v + 1)
   }, [loadAccounts])
 
+  const removeAccount = async () => {
+    await deleteTradingAccount(accountId)
+    setRemoving(false)
+    setTrades(null)
+    setCash([])
+    setAccountId(null)
+    await loadAccounts()
+    setVersion((v) => v + 1)
+  }
+
   const account = accounts?.find((a) => a.id === accountId)
   const money = useMemo(() => moneyFormatter(account?.currency || 'USD'), [account?.currency])
   const start = useMemo(() => (trades ? startingBalance(account, trades, cash) : null), [account, trades, cash])
@@ -97,14 +109,30 @@ export default function Journal() {
         subtitle="Your own MetaTrader 4 trades, analysed and plotted on the same market data as the rest of Vectes."
       >
         {accounts?.length > 0 && (
-          <label className="field">
-            <span className="field-label">Account</span>
-            <select value={accountId ?? ''} onChange={(e) => setAccountId(e.target.value)}>
-              {accounts.map((a) => <option key={a.id} value={a.id}>{accountName(a)}</option>)}
-            </select>
-          </label>
+          <>
+            <label className="field">
+              <span className="field-label">Account</span>
+              <select value={accountId ?? ''} onChange={(e) => { setRemoving(false); setAccountId(e.target.value) }}>
+                {accounts.map((a) => <option key={a.id} value={a.id}>{accountName(a)}</option>)}
+              </select>
+            </label>
+            {account && !removing && <button className="button ghost" onClick={() => setRemoving(true)}>Remove account</button>}
+          </>
         )}
       </PageHeader>
+
+      {removing && account && (
+        <ConfirmDelete
+          title={`Remove ${accountName(account)}?`}
+          word={account.account_number}
+          action="Remove account and its trades"
+          onConfirm={removeAccount}
+          onCancel={() => setRemoving(false)}
+        >
+          <p>This deletes the account from Vectes with its {account.tradeCount} trades, deposits, notes and tags. It can't be undone.</p>
+          <p>If the Expert Advisor is still attached in MT4, revoke its token first — otherwise the next sync adds the account back.</p>
+        </ConfirmDelete>
+      )}
 
       {error && <div className="card error">{error}</div>}
 

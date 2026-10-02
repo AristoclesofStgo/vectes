@@ -1171,6 +1171,35 @@ code {
 .import-notes:empty { display: none; }
 .import-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* ── Account, danger zone, privacy ──────────────────────── */
+.account-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.account-card { display: flex; flex-direction: column; gap: 14px; }
+.account-link { display: inline-flex; align-items: center; border-radius: 999px; }
+.account-link:hover .account-email { color: var(--text); }
+.account-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.button.danger { background: transparent; border-color: var(--down); color: var(--down); }
+.button.danger:hover:not(:disabled) { background: color-mix(in srgb, var(--down) 12%, transparent); }
+.danger-zone { display: flex; flex-direction: column; gap: 12px; border-color: color-mix(in srgb, var(--down) 45%, var(--border)); }
+.confirm-delete {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 18px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--down) 45%, var(--border));
+  background: color-mix(in srgb, var(--down) 6%, var(--surface));
+}
+.confirm-delete h3 { font-size: 1rem; }
+.confirm-body { display: flex; flex-direction: column; gap: 6px; }
+.confirm-delete label { display: flex; flex-direction: column; gap: 6px; max-width: 320px; }
+.confirm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.prose { width: 100%; max-width: 760px; margin: 0 auto; padding: 24px var(--gutter) 64px; flex: 1; }
+.prose h1 { font-family: var(--font-brand); font-size: 2rem; margin-bottom: 6px; }
+.prose h2 { font-size: 1.125rem; margin: 32px 0 10px; }
+.prose p, .prose li { font-size: 0.9375rem; line-height: 1.65; color: var(--text); }
+.prose p + p { margin-top: 10px; }
+.prose > p.muted { color: var(--text-muted); margin-bottom: 20px; }
+.prose ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+
 /* ── Footer ────────────────────────────────────────────── */
 .footer { border-top: 1px solid var(--border); }
 .footer-inner {

@@ -168,3 +168,8 @@ export async function importStatement({ parsed, accountId, offsetMinutes }) {
   }
   return id
 }
+
+// Removes one trading account; trades, cash flows and notes go with it (ON DELETE CASCADE)
+export async function deleteTradingAccount(id) {
+  unwrap(await supabase.from('trading_accounts').delete().eq('id', id))
+}
