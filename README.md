@@ -1,50 +1,146 @@
-# Aurum ETL Pipeline
+# Vectes — Market Data Pipeline & Interactive Dashboard
 
-Pipeline de datos automatizado que extrae precios de criptomonedas, 
-divisas, metales preciosos y petróleo en tiempo real.
+[![Refresh data & deploy](https://github.com/AristoclesofStgo/aurum-etl/actions/workflows/deploy.yml/badge.svg)](https://github.com/AristoclesofStgo/aurum-etl/actions/workflows/deploy.yml)
 
-## Arquitectura
-EventBridge (cada 6h) → Lambda Extract → S3 → Lambda Load → Snowflake → Tableau
+**Live site → [aristoclesofstgo.github.io/aurum-etl](https://aristoclesofstgo.github.io/aurum-etl/)**
 
-## Fuentes de datos
-- **Crypto**: CoinGecko API (BTC, ETH, SOL, ADA, XRP)
-- **Forex**: ExchangeRate API (EUR, GBP, JPY, CAD, CHF, MXN, BRL)
-- **Metales**: Yahoo Finance (XAU, XAG, XPT, XPD)
-- **Petróleo**: Yahoo Finance (WTI, Brent)
+An end-to-end data engineering project. It started as **Aurum**, a serverless ETL on AWS that captured crypto, currency, metal and oil prices every 6 hours into Snowflake. It grew into **Vectes**, an interactive market-data website that is rebuilt every day from one year of history for 24 assets, with charts, a portfolio backtester, cross-asset analytics and an in-browser SQL console.
 
-## Stack tecnológico
-- **AWS Lambda** — extracción y carga serverless
-- **AWS S3** — staging de datos raw
-- **AWS EventBridge** — orquestación y scheduling
-- **Snowflake** — data warehouse
-- **Tableau** — visualización
+![Vectes market view](docs/screenshots/market.png)
 
-## Estructura
-- `lambdas/extract/` — extracción de APIs a S3
-- `lambdas/load/` — carga de S3 a Snowflake
-- `snowflake/` — DDL de tablas y configuración
-- `infra/` — configuración de EventBridge
+## Highlights
 
-## Vectes (website)
-Sitio interactivo en `web/` (React + Vite) publicado en GitHub Pages. Un GitHub Action
-(`.github/workflows/deploy.yml`) corre todos los días: extrae un año de historia de
-Yahoo Finance y CoinGecko, genera los JSON y despliega el sitio.
+- **TradingView-style charts** — daily and 4-hour candles, volume, SMA/EMA/Bollinger/RSI, asset comparison and a *market replay* that plays the past year back bar by bar.
+- **Cross-currency pricing** — view any asset in USD, EUR, GBP, JPY, CHF, CAD, MXN, BRL, **gold ounces** or **bitcoin**, converted at each bar's exchange rate.
+- **Portfolio simulator** — lump sum or DCA, four rebalancing rules, benchmarks, Sharpe ratio, drawdowns, P&L attribution and an efficient frontier. Every configuration is a shareable URL.
+- **Cross-asset analysis** — correlation heatmap, risk vs. return, rolling correlation for any pair, and classic ratios (gold/silver, Brent–WTI, bitcoin in gold…).
+- **Data Lab** — pipeline architecture, data quality report, reconciliation against a reference source, a data dictionary and a **DuckDB-WASM SQL playground** that runs entirely in the browser.
+- **Self-refreshing at zero cost** — a scheduled GitHub Action extracts, validates and publishes new data every day; if a source fails, the deploy stops and the last good version stays online.
 
-- `scripts/clean_pipeline_exports.py` — limpia los exports originales de Snowflake → `data/pipeline/` (una sola vez)
-- `scripts/extract_history.py` — descarga la historia de mercado → `data/raw/`
-- `scripts/build_web_data.py` — genera los datasets del sitio → `web/public/data/`
+## Screenshots
 
-Correr localmente:
+| Portfolio simulator | Cross-asset analysis |
+|---|---|
+| ![Portfolio simulator](docs/screenshots/portfolio.png) | ![Correlation heatmap and risk vs. return](docs/screenshots/analysis.png) |
+
+| Data Lab · SQL playground | Data Lab · pipeline & data quality |
+|---|---|
+| ![SQL playground](docs/screenshots/sql.png) | ![Pipeline architecture and data quality](docs/screenshots/datalab.png) |
+
+<p align="center"><img src="docs/screenshots/mobile.png" alt="Vectes on a phone" width="280"></p>
+
+## Architecture
+
+The project has two stages that share the same idea: extract → stage → transform → serve.
+
+**1 · Original ETL (June 27 – July 11, 2026)**
+
+```mermaid
+flowchart LR
+    EB[EventBridge<br/>every 6h] --> LE[Lambda Extract<br/>CoinGecko · ExchangeRate-API · Yahoo]
+    LE --> S3[(S3<br/>raw JSON)]
+    S3 --> LL[Lambda Load]
+    LL --> SF[(Snowflake<br/>4 tables)]
+    SF --> TB[Tableau<br/>dashboard]
+```
+
+**2 · Today: daily refresh on GitHub**
+
+```mermaid
+flowchart LR
+    GA[GitHub Actions<br/>daily 22:30 UTC] --> EX[extract_history.py<br/>Yahoo Finance · CoinGecko]
+    EX --> BD[build_web_data.py<br/>clean · align · validate · reconcile]
+    SN[(Snowflake exports)] --> CL[clean_pipeline_exports.py] --> BD
+    BD --> JS[(52 static JSON files)]
+    JS --> GP[GitHub Pages<br/>React + Vite]
+    GP --> BR[Browser<br/>charts · simulator · DuckDB]
+```
+
+The cleaned captures from the original pipeline are kept in `data/pipeline/` and shown on the site, reconciled against the reference history.
+
+## Data
+
+| Class | Assets | Source |
+|---|---|---|
+| Crypto | BTC, ETH, SOL, XRP, ADA | Yahoo Finance · CoinGecko (fundamentals) |
+| Precious metals | Gold, silver, platinum, palladium (futures) | Yahoo Finance |
+| Energy | WTI, Brent (futures) | Yahoo Finance |
+| Currencies | EUR, GBP, JPY, CAD, CHF, MXN, BRL vs USD | Yahoo Finance |
+| Indices & bonds | S&P 500, Nasdaq 100, US Aggregate Bond ETF | Yahoo Finance |
+| Macro gauges | US 10Y yield, US Dollar Index, VIX | Yahoo Finance |
+
+One year of daily bars plus hourly bars (aggregated to 4-hour candles) for every asset: about 2.5 MB of JSON, loaded per asset on demand.
+
+## Data quality: what the data taught me
+
+Cleaning and validating the data surfaced several real issues, each documented and fixed in code:
+
+| Issue | Impact | Fix |
+|---|---|---|
+| Some S3 files were loaded into Snowflake more than once | **72%** of exported rows (2,891 of 4,007) were exact duplicates | Deduplicate, then snap each capture to its 6-hour schedule slot |
+| Manual test runs on June 28 | 120 extra snapshots outside the schedule | Keep the latest capture per slot |
+| `OPEN_PRICE` for metals and oil was the open from 7 days earlier | The "24h change" column was really a weekly change | Not used downstream; recomputed from prices |
+| The free ExchangeRate-API publishes once a day | Most 6-hour FX captures repeat the previous value | Flagged as stale and excluded from statistics |
+| Yahoo's daily FX bars close at London midnight, one session behind US markets | EUR/USD vs the Dollar Index showed −0.15 correlation instead of ≈ −0.9 | FX daily candles rebuilt from hourly bars with the 17:00 New York cutoff (now −0.92) |
+| Crypto trades 24/7, other markets only on weekdays | Weekend zero-returns distort correlations and volatility | Analytics sample returns on US trading days |
+
+Every price the original pipeline captured is reconciled against Yahoo Finance's hourly close at the same moment. The mean absolute difference was **≈9 bps for BTC and ETH** and 11–26 bps for metals.
+
+## Tech stack
+
+| Layer | Tools |
+|---|---|
+| Original pipeline | AWS Lambda, Amazon S3, Amazon EventBridge, Snowflake, Tableau |
+| Data processing | Python, pandas, yfinance, GitHub Actions |
+| Website | React 19, Vite, Zustand, React Router (hash routing) |
+| Charts | lightweight-charts (TradingView), Apache ECharts |
+| In-browser SQL | DuckDB-WASM |
+| Hosting | GitHub Pages |
+
+## Repository structure
+
+```
+├── lambdas/                     # Original AWS pipeline
+│   ├── extract/                 #   APIs → S3 (raw JSON)
+│   └── load/                    #   S3 → Snowflake
+├── snowflake/setup.sql          # Warehouse DDL (4 tables)
+├── tableau/                     # Exports and the original Tableau dashboard
+├── data/pipeline/               # Cleaned captures from the AWS pipeline + reports
+├── scripts/
+│   ├── catalog.py               # Single source of truth for the 24 assets
+│   ├── clean_pipeline_exports.py
+│   ├── extract_history.py       # Yahoo Finance + CoinGecko → data/raw/
+│   └── build_web_data.py        # data/ → web/public/data/ (validated JSON)
+├── web/                         # Vectes website (React + Vite)
+│   └── src/
+│       ├── tabs/                # Market · Analysis · Portfolio · Data Lab
+│       ├── components/
+│       └── lib/                 # Backtesting, indicators, statistics, DuckDB
+└── .github/workflows/deploy.yml # Daily refresh + deploy to GitHub Pages
+```
+
+## Running locally
+
+**Website**
+
 ```bash
 pip install -r scripts/requirements.txt
-python scripts/extract_history.py
-python scripts/build_web_data.py
+python scripts/extract_history.py     # download one year of history
+python scripts/build_web_data.py      # build the site's datasets
 cd web && npm install && npm run dev
 ```
 
-## Setup
-1. Clona el repositorio
-2. Copia `.env.example` a `.env` y completa las variables
-3. Crea el bucket S3 y ejecuta `snowflake/setup.sql`
-4. Despliega las Lambdas a AWS
-5. Configura el trigger de S3 y EventBridge
+**Original AWS pipeline**
+
+1. Copy `.env.example` to `.env` and fill in the AWS, Snowflake and ExchangeRate-API values.
+2. Create the S3 bucket and run `snowflake/setup.sql`.
+3. Deploy `lambdas/extract` and `lambdas/load` to AWS Lambda.
+4. Schedule the extract Lambda with EventBridge (every 6 hours) and trigger the load Lambda from S3.
+
+## Methodology notes
+
+- Non-trading days carry the last close forward; the portfolio simulator measures returns per calendar day (365/yr) and the analytics per US trading day (252/yr).
+- Sharpe ratios use the average US 10-year Treasury yield over the selected period as the risk-free rate.
+- Index levels exclude dividends. The simulator ignores fees, spreads and taxes.
+
+*For educational purposes only — not investment advice.*
