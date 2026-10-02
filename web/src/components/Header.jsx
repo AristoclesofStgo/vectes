@@ -2,15 +2,17 @@ import { NavLink } from 'react-router-dom'
 import Logo from './Logo.jsx'
 import { useStore } from '../store.js'
 import { useJson } from '../lib/data.js'
+import { useAuth, daysLeft } from '../lib/auth.js'
 
 export const TABS = [
-  { path: '/',          label: 'Market' },
+  { path: '/market',    label: 'Market' },
   { path: '/analysis',  label: 'Analysis' },
   { path: '/portfolio', label: 'Portfolio' },
+  { path: '/journal',   label: 'Journal' },
   { path: '/data-lab',  label: 'Data Lab' },
 ]
 
-function ThemeToggle() {
+export function ThemeToggle() {
   const theme = useStore((s) => s.theme)
   const setTheme = useStore((s) => s.setTheme)
   const next = theme === 'dark' ? 'light' : 'dark'
@@ -38,14 +40,31 @@ function DataFreshness() {
   )
 }
 
+function Account() {
+  const session = useAuth((s) => s.session)
+  const signOut = useAuth((s) => s.signOut)
+  if (!session) return null
+  const left = daysLeft(session)
+  return (
+    <div className="account">
+      {session.kind === 'demo' && (
+        <span className="badge" title="Demo access expires after 7 days">
+          Demo · {left} {left === 1 ? 'day' : 'days'} left
+        </span>
+      )}
+      <button className="button ghost" onClick={signOut}>Sign out</button>
+    </div>
+  )
+}
+
 export default function Header() {
   return (
     <header className="header">
       <div className="header-inner">
-        <NavLink to="/" className="brand"><Logo size={26} /></NavLink>
+        <NavLink to="/" className="brand" aria-label="Vectes home"><Logo size={26} /></NavLink>
         <nav className="tabs" aria-label="Sections">
           {TABS.map((t) => (
-            <NavLink key={t.path} to={t.path} end={t.path === '/'} className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
+            <NavLink key={t.path} to={t.path} className={({ isActive }) => `tab${isActive ? ' active' : ''}`}>
               {t.label}
             </NavLink>
           ))}
@@ -53,6 +72,7 @@ export default function Header() {
         <div className="header-actions">
           <DataFreshness />
           <ThemeToggle />
+          <Account />
         </div>
       </div>
     </header>

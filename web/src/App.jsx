@@ -1,34 +1,63 @@
 import { Suspense, lazy } from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Header from './components/Header.jsx'
 import Footer from './components/Footer.jsx'
+import RequireAuth from './components/RequireAuth.jsx'
+import Home from './pages/Home.jsx'
 
-// Each tab is its own chunk so visitors only download the charts they open
+// Each page is its own chunk so visitors only download the charts they open
+const Login = lazy(() => import('./pages/Login.jsx'))
 const Market = lazy(() => import('./tabs/Market.jsx'))
 const Analysis = lazy(() => import('./tabs/Analysis.jsx'))
 const Portfolio = lazy(() => import('./tabs/Portfolio.jsx'))
+const Journal = lazy(() => import('./tabs/Journal.jsx'))
 const DataLab = lazy(() => import('./tabs/DataLab.jsx'))
 
-export default function App() {
+const fallback = <div className="card skeleton" style={{ height: 480 }} />
+
+// Header + tabs around every signed-in page
+function AppLayout() {
   const location = useLocation()
   return (
     <div className="app">
       <Header />
       <main className="main">
         <ErrorBoundary resetKey={location.pathname + location.search}>
-          <Suspense fallback={<div className="card skeleton" style={{ height: 480 }} />}>
-            <Routes>
-              <Route path="/" element={<Market />} />
-              <Route path="/analysis" element={<Analysis />} />
-              <Route path="/portfolio" element={<Portfolio />} />
-              <Route path="/data-lab" element={<DataLab />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+          <Suspense fallback={fallback}>
+            <Outlet />
           </Suspense>
         </ErrorBoundary>
       </main>
       <Footer />
     </div>
+  )
+}
+
+// Market used to live at "/": keep old shared links like /#/?asset=XAU working
+function Landing() {
+  const { search } = useLocation()
+  return search ? <Navigate to={`/market${search}`} replace /> : <Home />
+}
+
+export default function App() {
+  return (
+    <Suspense fallback={null}>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login mode="login" />} />
+        <Route path="/signup" element={<Login mode="signup" />} />
+        <Route element={<RequireAuth />}>
+          <Route element={<AppLayout />}>
+            <Route path="/market" element={<Market />} />
+            <Route path="/analysis" element={<Analysis />} />
+            <Route path="/portfolio" element={<Portfolio />} />
+            <Route path="/journal" element={<Journal />} />
+            <Route path="/data-lab" element={<DataLab />} />
+          </Route>
+        </Route>
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   )
 }

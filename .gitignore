@@ -19,3 +19,6 @@ data/raw/
 web/public/data/
 web/node_modules/
 web/dist/
+
+# Claude Code local settings
+.claude/settings.local.json
