@@ -1,0 +1,93 @@
+{
+  "schedule": "EventBridge every 6h (~02:55, 08:55, 14:55, 20:55 UTC)",
+  "architecture": "EventBridge -> Lambda Extract -> S3 -> Lambda Load -> Snowflake",
+  "sources": [
+    {
+      "category": "crypto",
+      "table": "CRYPTO_PRICES",
+      "api": "CoinGecko",
+      "source_file": "Crypto_2026-07-11-1109.csv",
+      "raw_rows": 1120,
+      "columns": 19,
+      "always_null_columns": [],
+      "duplicate_rows": 800,
+      "collapsed_test_runs": 40,
+      "clean_rows": 280,
+      "stale_points": 0,
+      "first_snapshot": "2026-06-27T21:40:31.221000Z",
+      "last_snapshot": "2026-07-11T14:55:10.774000Z"
+    },
+    {
+      "category": "fx",
+      "table": "FX_PRICES",
+      "api": "ExchangeRate-API",
+      "source_file": "FX_2026-07-11-1110.csv",
+      "raw_rows": 1603,
+      "columns": 17,
+      "always_null_columns": [
+        "BID",
+        "ASK",
+        "OPEN_PRICE",
+        "HIGH_24H",
+        "LOW_24H",
+        "PRICE_CHANGE_24H",
+        "PRICE_CHANGE_PCT_24H",
+        "HIGH_7D",
+        "LOW_7D",
+        "HIGH_30D",
+        "LOW_30D"
+      ],
+      "duplicate_rows": 1155,
+      "collapsed_test_runs": 56,
+      "clean_rows": 392,
+      "stale_points": 287,
+      "first_snapshot": "2026-06-27T21:40:31.610000Z",
+      "last_snapshot": "2026-07-11T14:55:10.999000Z"
+    },
+    {
+      "category": "metals",
+      "table": "METALS_PRICES",
+      "api": "Yahoo Finance",
+      "source_file": "Metals_2026-07-11-1111.csv",
+      "raw_rows": 860,
+      "columns": 18,
+      "always_null_columns": [
+        "HIGH_30D",
+        "LOW_30D",
+        "HIGH_52W",
+        "LOW_52W"
+      ],
+      "duplicate_rows": 628,
+      "collapsed_test_runs": 16,
+      "clean_rows": 216,
+      "stale_points": 58,
+      "first_snapshot": "2026-06-27T19:40:46.474000Z",
+      "last_snapshot": "2026-07-11T14:55:11.032000Z"
+    },
+    {
+      "category": "energy",
+      "table": "OIL_PRICES",
+      "api": "Yahoo Finance",
+      "source_file": "Oil_2026-07-11-1112.csv",
+      "raw_rows": 424,
+      "columns": 16,
+      "always_null_columns": [
+        "HIGH_30D",
+        "LOW_30D"
+      ],
+      "duplicate_rows": 308,
+      "collapsed_test_runs": 8,
+      "clean_rows": 108,
+      "stale_points": 29,
+      "first_snapshot": "2026-06-27T19:40:46.474000Z",
+      "last_snapshot": "2026-07-11T14:55:11.032000Z"
+    }
+  ],
+  "issues": [
+    "Some S3 files were loaded into Snowflake more than once, producing exact duplicate rows.",
+    "Manual test runs on 2026-06-28 created extra snapshots outside the 6h schedule.",
+    "Metals/energy OPEN_PRICE was the open from 7 days earlier, so PRICE_CHANGE_PCT_24H was really a weekly change.",
+    "ExchangeRate-API (free tier) publishes once a day, so most 6h FX snapshots repeat the previous value.",
+    "HIGH_30D / LOW_30D / HIGH_52W / LOW_52W were never populated."
+  ]
+}

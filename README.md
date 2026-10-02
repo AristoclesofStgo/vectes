@@ -25,6 +25,23 @@ EventBridge (cada 6h) → Lambda Extract → S3 → Lambda Load → Snowflake �
 - `snowflake/` — DDL de tablas y configuración
 - `infra/` — configuración de EventBridge
 
+## Vectes (website)
+Sitio interactivo en `web/` (React + Vite) publicado en GitHub Pages. Un GitHub Action
+(`.github/workflows/deploy.yml`) corre todos los días: extrae un año de historia de
+Yahoo Finance y CoinGecko, genera los JSON y despliega el sitio.
+
+- `scripts/clean_pipeline_exports.py` — limpia los exports originales de Snowflake → `data/pipeline/` (una sola vez)
+- `scripts/extract_history.py` — descarga la historia de mercado → `data/raw/`
+- `scripts/build_web_data.py` — genera los datasets del sitio → `web/public/data/`
+
+Correr localmente:
+```bash
+pip install -r scripts/requirements.txt
+python scripts/extract_history.py
+python scripts/build_web_data.py
+cd web && npm install && npm run dev
+```
+
 ## Setup
 1. Clona el repositorio
 2. Copia `.env.example` a `.env` y completa las variables
