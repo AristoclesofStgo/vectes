@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.33.1-dev57.0",
     "echarts": "^6.1.0",
     "lightweight-charts": "^5.2.1",
     "react": "^19.3.0",
