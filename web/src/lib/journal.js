@@ -50,3 +50,35 @@ export async function revokeToken(id) {
 export async function deleteToken(id) {
   unwrap(await supabase.from('ingest_tokens').delete().eq('id', id))
 }
+
+const TRADE_COLUMNS = 'id, account_id, ticket, symbol, asset_id, side, volume, open_time, open_price, close_time, close_price, stop_loss, take_profit, commission, taxes, swap, profit, source, notes, tags'
+
+// Every closed trade for the user (or one account), oldest first; PostgREST pages at 1000 rows
+export async function listTrades(accountId) {
+  const rows = []
+  for (let from = 0; ; from += 1000) {
+    let query = supabase.from('trades').select(TRADE_COLUMNS).order('close_time').order('id').range(from, from + 999)
+    if (accountId) query = query.eq('account_id', accountId)
+    const page = unwrap(await query)
+    rows.push(...page)
+    if (page.length < 1000) break
+  }
+  return rows.map((t) => ({
+    ...t,
+    volume: Number(t.volume),
+    open_price: Number(t.open_price),
+    close_price: Number(t.close_price),
+    stop_loss: t.stop_loss == null ? null : Number(t.stop_loss),
+    take_profit: t.take_profit == null ? null : Number(t.take_profit),
+    commission: Number(t.commission),
+    taxes: Number(t.taxes),
+    swap: Number(t.swap),
+    profit: Number(t.profit),
+    openMs: Date.parse(t.open_time),
+    closeMs: Date.parse(t.close_time),
+  }))
+}
+
+export async function updateTradeNotes(id, { notes, tags }) {
+  unwrap(await supabase.from('trades').update({ notes: notes?.trim() || null, tags }).eq('id', id))
+}

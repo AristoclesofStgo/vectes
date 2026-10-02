@@ -1080,6 +1080,72 @@ code {
   .connect-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
+/* ── Journal · dashboard ───────────────────────────────── */
+.journal-kpis { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.page-header .field select { max-width: 320px; }
+.journal-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 20px; }
+
+.calendar-nav { display: flex; align-items: center; gap: 8px; }
+.calendar-nav .icon-button { font-size: 1.125rem; line-height: 1; }
+.calendar-nav .icon-button:disabled { opacity: 0.4; cursor: default; }
+.calendar-month { min-width: 130px; text-align: center; font-weight: 600; font-size: 0.875rem; }
+.calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; }
+.calendar-head { padding: 4px 0 6px; text-align: center; font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.calendar-cell {
+  min-height: 52px;
+  padding: 5px 6px;
+  border-radius: 4px;
+  background: var(--surface-2);
+  display: flex; flex-direction: column;
+  font-variant-numeric: tabular-nums;
+}
+.calendar-cell.pad { background: transparent; }
+.calendar-day { font-size: 0.6875rem; opacity: 0.75; }
+.calendar-pnl { margin-top: auto; font-size: 0.75rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.calendar-count { font-size: 0.625rem; opacity: 0.75; }
+
+.breakdown-table .bar-col { width: 34%; min-width: 120px; }
+.pnl-bar { position: relative; display: block; height: 10px; }
+.pnl-bar::before { content: ''; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--border); }
+.pnl-bar span { position: absolute; top: 0; height: 100%; min-width: 2px; }
+.pnl-bar .pos { left: calc(50% + 1px); background: var(--div-pos); border-radius: 0 4px 4px 0; }
+.pnl-bar .neg { right: calc(50% + 1px); background: var(--div-neg); border-radius: 4px 0 0 4px; }
+
+.trade-chart-canvas { height: 420px; }
+.trade-chart .chart-note { margin-top: 10px; }
+.trade-chart { scroll-margin-top: 76px; }
+.marker-key.entry { color: var(--series-1); }
+.marker-key.exit { color: var(--series-4); }
+
+.filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.trade-row { cursor: pointer; }
+.trade-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.trade-row.expanded, .trade-row.focused { background: var(--surface-2); }
+.note-dot { display: inline-block; width: 6px; height: 6px; margin-left: 6px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
+.trade-detail td { white-space: normal; background: var(--surface-2); padding: 14px 16px 18px; }
+.trade-detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 24px; }
+.trade-facts { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; align-content: start; }
+.trade-facts dt { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+.trade-facts dd { margin: 2px 0 0; font-variant-numeric: tabular-nums; }
+.trade-detail-side { display: flex; flex-direction: column; gap: 12px; align-items: flex-start; }
+.notes-editor { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+.notes-editor label { display: flex; flex-direction: column; gap: 4px; }
+.notes-editor textarea.input { height: auto; padding: 8px 10px; resize: vertical; font: inherit; font-size: 0.875rem; line-height: 1.45; }
+.notes-actions { display: flex; align-items: center; gap: 10px; }
+.pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 14px; }
+.empty-journal { display: flex; flex-direction: column; gap: 6px; }
+
+@media (max-width: 1080px) {
+  .journal-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  .trade-chart-canvas { height: 340px; }
+  .trade-detail-grid { grid-template-columns: minmax(0, 1fr); }
+  .calendar-cell { min-height: 44px; padding: 4px; }
+  .calendar-pnl { font-size: 0.625rem; }
+  .filters select { flex: 1 1 45%; max-width: none; }
+}
+
 /* ── Footer ────────────────────────────────────────────── */
 .footer { border-top: 1px solid var(--border); }
 .footer-inner {

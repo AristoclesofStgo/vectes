@@ -26,13 +26,19 @@ async function loadSession(authSession) {
 }
 
 async function seedDemo() {
+  const demoTrades = await buildDemoTrades()
+  // Demo accounts start at 10,000 USD; the balance is what the EA would report today
+  const net = demoTrades.reduce((s, t) => s + t.profit + t.swap + t.commission + t.taxes, 0)
   const { data: account, error } = await supabase
     .from('trading_accounts')
-    .insert({ broker: 'Vectes Demo Broker', account_number: '1000001', currency: 'USD', label: 'Demo account', server_utc_offset_minutes: 180 })
+    .insert({
+      broker: 'Vectes Demo Broker', account_number: '1000001', currency: 'USD', label: 'Demo account',
+      server_utc_offset_minutes: 180, balance: Math.round((10000 + net) * 100) / 100,
+    })
     .select('id')
     .single()
   if (error) throw error
-  const trades = (await buildDemoTrades()).map((t) => ({ ...t, account_id: account.id }))
+  const trades = demoTrades.map((t) => ({ ...t, account_id: account.id }))
   const { error: tradesError } = await supabase.from('trades').insert(trades)
   if (tradesError) throw tradesError
 }
