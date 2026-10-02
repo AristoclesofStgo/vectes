@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'web/**'
+      - 'supabase/functions/_shared/**'
       - 'scripts/**'
       - 'data/pipeline/**'
       - '.github/workflows/deploy.yml'

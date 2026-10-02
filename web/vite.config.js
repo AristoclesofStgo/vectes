@@ -5,4 +5,6 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: process.env.VITE_BASE ?? '/vectes/',
   plugins: [react()],
+  // The symbol map is shared with the Supabase Edge Functions one level up
+  server: { fs: { allow: ['..'] } },
 })

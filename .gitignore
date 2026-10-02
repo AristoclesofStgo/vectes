@@ -22,3 +22,6 @@ web/dist/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Supabase CLI local state
+supabase/.temp/

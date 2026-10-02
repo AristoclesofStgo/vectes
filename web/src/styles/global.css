@@ -1031,6 +1031,55 @@ code {
   .band-inner { padding: 64px var(--gutter); }
   .cta { margin: 72px auto; }
 }
+/* ── Journal · Connect MT4 ─────────────────────────────── */
+.connect-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 32px; }
+.setup-steps { margin: 0; padding: 0; list-style: none; counter-reset: step; display: flex; flex-direction: column; gap: 18px; }
+.setup-steps li { position: relative; padding-left: 40px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; counter-increment: step; }
+.setup-steps li::before {
+  content: counter(step);
+  position: absolute; left: 0; top: 0;
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.8125rem;
+}
+.setup-steps h3, .connect-side h3 { font-size: 0.9375rem; }
+.setup-steps p { font-size: 0.875rem; }
+.connect code { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 0.8125rem; }
+.connect-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.connect-side h3:not(:first-child) { margin-top: 12px; }
+.token-form { display: flex; gap: 8px; }
+.token-form .input { flex: 1; min-width: 0; height: 34px; }
+.token-row { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; }
+.token-value {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+.token-reveal {
+  display: flex; flex-direction: column; gap: 10px; align-items: flex-start;
+  padding: 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent);
+  background: var(--accent-soft);
+  font-size: 0.875rem;
+}
+.token-list { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--border); }
+.token-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+.token-skeleton { height: 48px; border-radius: var(--radius-sm); }
+.revoked summary { cursor: pointer; }
+@media (max-width: 960px) {
+  .connect-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* ── Footer ────────────────────────────────────────────── */
 .footer { border-top: 1px solid var(--border); }
 .footer-inner {
