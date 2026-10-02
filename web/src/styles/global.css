@@ -992,7 +992,17 @@ code {
   color: var(--text);
   font-size: 0.875rem;
 }
+.auth-error {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--down) 14%, transparent);
+  color: var(--down);
+  font-size: 0.875rem;
+}
 .auth-switch { text-align: center; }
+.button:disabled { opacity: 0.6; cursor: progress; }
+.gate-loading { min-height: 60vh; }
+.account-email { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .auth-demo {
   padding: 20px;
   border: 1px dashed var(--border);

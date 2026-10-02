@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Logo from '../components/Logo.jsx'
 import Footer from '../components/Footer.jsx'
 import TickerTape from '../components/market/TickerTape.jsx'
 import { ThemeToggle } from '../components/Header.jsx'
-import { useAuth, DEMO_DAYS } from '../lib/auth.js'
+import { useAuth, hasAccess, DEMO_DAYS } from '../lib/auth.js'
 import { useJson } from '../lib/data.js'
 import { quoteSummary } from '../lib/stats.js'
 
@@ -95,10 +95,23 @@ export default function Home() {
     return assets.data.assets.map((a) => ({ ...a, ...quoteSummary(prices.data.series[a.id]) }))
   }, [assets.data, prices.data])
 
-  const tryDemo = () => {
-    if (!session) startDemo()
+  const signedIn = hasAccess(session)
+  const [demo, setDemo] = useState({ busy: false, error: null })
+
+  const tryDemo = async () => {
+    if (demo.busy) return
+    if (!signedIn) {
+      setDemo({ busy: true, error: null })
+      try {
+        await startDemo()
+      } catch {
+        setDemo({ busy: false, error: 'The demo could not start. Please try again in a moment.' })
+        return
+      }
+    }
     navigate('/market')
   }
+  const demoLabel = demo.busy ? 'Preparing demo…' : 'Try the demo'
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   return (
@@ -113,12 +126,12 @@ export default function Home() {
           </nav>
           <div className="header-actions">
             <ThemeToggle />
-            {session ? (
+            {signedIn ? (
               <Link className="button primary" to="/market">Open Vectes</Link>
             ) : (
               <>
                 <Link className="button ghost" to="/login">Log in</Link>
-                <button className="button primary hide-sm" onClick={tryDemo}>Try demo</button>
+                <button className="button primary hide-sm" onClick={tryDemo} disabled={demo.busy}>Try demo</button>
               </>
             )}
           </div>
@@ -138,10 +151,12 @@ export default function Home() {
               backtests you already use.
             </p>
             <div className="hero-actions">
-              <button className="button primary lg" onClick={tryDemo}>Try the demo</button>
+              <button className="button primary lg" onClick={tryDemo} disabled={demo.busy}>{demoLabel}</button>
               <Link className="button lg" to="/signup">Create an account</Link>
             </div>
-            <p className="muted small">Demo access lasts {DEMO_DAYS} days with sample trades. No sign-up needed.</p>
+            {demo.error
+              ? <p className="small down" role="alert">{demo.error}</p>
+              : <p className="muted small">Demo access lasts {DEMO_DAYS} days with sample trades. No sign-up needed.</p>}
           </div>
           <div className="hero-media">
             <LoopVideo className="hero-video" src={media('hero.mp4')} poster={media('hero-poster.jpg')} />
@@ -226,7 +241,7 @@ export default function Home() {
           <h2>See it with real data</h2>
           <p className="muted">Open the demo and explore every tab for {DEMO_DAYS} days.</p>
           <div className="hero-actions">
-            <button className="button primary lg" onClick={tryDemo}>Try the demo</button>
+            <button className="button primary lg" onClick={tryDemo} disabled={demo.busy}>{demoLabel}</button>
             <Link className="button lg" to="/login">Log in</Link>
           </div>
         </section>

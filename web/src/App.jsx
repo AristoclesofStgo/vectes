@@ -1,10 +1,11 @@
-import { Suspense, lazy } from 'react'
-import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom'
+import { Suspense, lazy, useEffect } from 'react'
+import { Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import Header from './components/Header.jsx'
 import Footer from './components/Footer.jsx'
 import RequireAuth from './components/RequireAuth.jsx'
 import Home from './pages/Home.jsx'
+import { useAuth, hasAccess, takeDestination } from './lib/auth.js'
 
 // Each page is its own chunk so visitors only download the charts they open
 const Login = lazy(() => import('./pages/Login.jsx'))
@@ -41,6 +42,19 @@ function Landing() {
 }
 
 export default function App() {
+  const navigate = useNavigate()
+  const status = useAuth((s) => s.status)
+  const session = useAuth((s) => s.session)
+
+  useEffect(() => useAuth.getState().init(), [])
+
+  // Back from Google or an email link: continue to the page the visitor wanted
+  useEffect(() => {
+    if (status !== 'ready' || !hasAccess(session)) return
+    const to = takeDestination()
+    if (to) navigate(to, { replace: true })
+  }, [status, session, navigate])
+
   return (
     <Suspense fallback={null}>
       <Routes>
