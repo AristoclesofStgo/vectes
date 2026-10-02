@@ -5,9 +5,9 @@
 //+------------------------------------------------------------------+
 #property copyright   "Vectes"
 #property link        "https://aristoclesofstgo.github.io/vectes/"
-#property version     "1.00"
+#property version     "1.10"
 #property strict
-#property description "Sends every closed trade to your Vectes Journal."
+#property description "Sends every closed trade, deposit and withdrawal to your Vectes Journal."
 #property description "1. Paste your token from Vectes > Journal > Connect MT4."
 #property description "2. Tools > Options > Expert Advisors > Allow WebRequest for:"
 #property description "   https://kxzzwenckumkcqymflrx.supabase.co"
@@ -31,7 +31,8 @@ bool     g_halted        = false; // token rejected: stop until the inputs chang
 bool     g_started       = false;
 string   g_status        = "Starting...";
 
-string KeyLastClose() { return "VectesSync." + IntegerToString(AccountNumber()) + ".lastClose"; }
+// v2 key: 1.10 also sends deposits/withdrawals, so it re-sends the history once (idempotent)
+string KeyLastClose() { return "VectesSync.v2." + IntegerToString(AccountNumber()) + ".lastClose"; }
 string KeyOffset()    { return "VectesSync." + IntegerToString(AccountNumber()) + ".offset"; }
 
 //+------------------------------------------------------------------+
@@ -140,6 +141,16 @@ string TradeJson()
           ",\"profit\":" + Num(OrderProfit(), 2) + "}");
 }
 
+// The selected balance/credit operation (deposit, withdrawal, bonus) as JSON
+string CashJson()
+{
+   return("{\"ticket\":\"" + IntegerToString(OrderTicket()) + "\"" +
+          ",\"kind\":\"" + (OrderType() == 6 ? "balance" : "credit") + "\"" +
+          ",\"amount\":" + Num(OrderProfit(), 2) +
+          ",\"time\":" + IntegerToString((long)OrderOpenTime()) +
+          ",\"comment\":\"" + JsonEscape(OrderComment()) + "\"}");
+}
+
 //+------------------------------------------------------------------+
 //| POST one payload. Returns the HTTP status, or -1 on a local error|
 //+------------------------------------------------------------------+
@@ -170,13 +181,13 @@ int Post(string payload, string &response)
    return(status);
 }
 
-bool Send(string accountJson, string &trades[], int from, int count)
+bool Send(string accountJson, string &trades[], int from, int count, string cashItems)
 {
    string items = "";
    for(int k = from; k < from + count; k++)
       items += (k > from ? "," : "") + trades[k];
    string response;
-   int status = Post("{\"v\":1,\"account\":" + accountJson + ",\"trades\":[" + items + "]}", response);
+   int status = Post("{\"v\":2,\"account\":" + accountJson + ",\"trades\":[" + items + "],\"cash\":[" + cashItems + "]}", response);
    if(status == 200 && StringFind(response, "\"ok\":true") >= 0) return(true);
    if(status == 401 || status == 403)
    {
@@ -205,28 +216,39 @@ void Sync()
    bool heartbeat = TimeLocal() - g_lastBeat >= HEARTBEAT_SECS;
    if(total == g_lastTotal && !heartbeat) return;
 
-   // Closed market orders not yet delivered (re-sending the boundary second is harmless)
+   // Closed market orders and balance operations not yet delivered
+   // (re-sending the boundary second is harmless: the server deduplicates by ticket)
    string trades[];
-   int count = 0;
+   string cash = "";
+   int count = 0, cashCount = 0;
    datetime newest = g_lastClose;
    for(int i = 0; i < total; i++)
    {
       if(!OrderSelect(i, SELECT_BY_POS, MODE_HISTORY)) continue;
-      if(OrderType() != OP_BUY && OrderType() != OP_SELL) continue;
+      int type = OrderType();
+      if(type == 6 || type == 7) // 6 = balance (deposit/withdrawal), 7 = credit
+      {
+         if(OrderOpenTime() < g_lastClose || OrderProfit() == 0) continue;
+         cash += (cashCount++ > 0 ? "," : "") + CashJson();
+         if(OrderOpenTime() > newest) newest = OrderOpenTime();
+         continue;
+      }
+      if(type != OP_BUY && type != OP_SELL) continue;
       if(OrderCloseTime() == 0 || OrderCloseTime() < g_lastClose) continue;
       ArrayResize(trades, count + 1, 256);
       trades[count++] = TradeJson();
       if(OrderCloseTime() > newest) newest = OrderCloseTime();
    }
 
+   // Balance operations ride along with the first batch
    string accountJson = AccountJson(offset);
    if(count == 0)
    {
-      if(!Send(accountJson, trades, 0, 0)) { Fail(); return; }
+      if(!Send(accountJson, trades, 0, 0, cash)) { Fail(); return; }
    }
    for(int from = 0; from < count; from += BATCH_SIZE)
    {
-      if(!Send(accountJson, trades, from, MathMin(BATCH_SIZE, count - from))) { Fail(); return; }
+      if(!Send(accountJson, trades, from, MathMin(BATCH_SIZE, count - from), from == 0 ? cash : "")) { Fail(); return; }
    }
 
    g_lastClose = newest;
@@ -234,7 +256,9 @@ void Sync()
    g_lastTotal = total;
    g_lastBeat = TimeLocal();
    g_failures = 0;
-   g_status = (count > 0 ? "Sent " + IntegerToString(count) + " trade(s)." : "Up to date.") +
+   g_status = (count + cashCount > 0
+                 ? "Sent " + IntegerToString(count) + " trade(s), " + IntegerToString(cashCount) + " balance op(s)."
+                 : "Up to date.") +
               " Last sync " + TimeToString(TimeLocal(), TIME_MINUTES);
 }
 

@@ -20,21 +20,34 @@ export const sessionOf = (ms) => {
 export const weekdayOf = (ms) => WEEKDAYS[(new Date(ms).getUTCDay() + 6) % 7]
 export const dayKey = (ms) => new Date(ms).toISOString().slice(0, 10)
 
-// Balance before the first trade: the reported balance minus everything the trades made
-export function startingBalance(account, trades) {
-  if (account?.balance == null) return null
-  return Number(account.balance) - trades.reduce((s, t) => s + netPnl(t), 0)
+// Balance before the first event. With a reported balance it is solved backwards
+// (balance = start + deposits − withdrawals + trading P&L); without one, an account that
+// has its deposits on record starts from zero, and anything else has no known base.
+export function startingBalance(account, trades, cash = []) {
+  const pnl = trades.reduce((s, t) => s + netPnl(t), 0)
+  const moved = cash.reduce((s, c) => s + c.amount, 0)
+  if (account?.balance != null) {
+    const start = Number(account.balance) - pnl - moved
+    return Math.abs(start) < 0.005 ? 0 : start
+  }
+  return cash.length ? 0 : null
 }
 
-export function journalStats(trades, start = null) {
+// Trades and cash flows on one timeline (cash first when they share a timestamp)
+function timeline(trades, cash) {
+  const events = [
+    ...cash.map((c) => ({ ms: c.ms, cash: c.amount })),
+    ...trades.map((t) => ({ ms: t.closeMs, pnl: netPnl(t) })),
+  ]
+  return events.sort((a, b) => a.ms - b.ms || (a.cash != null ? -1 : 1))
+}
+
+export function journalStats(trades, start = null, cash = []) {
   const n = trades.length
   let wins = 0, losses = 0, grossProfit = 0, grossLoss = 0, costs = 0, holdMs = 0
   let best = null, worst = null
   let longs = 0, longWins = 0, shorts = 0, shortWins = 0
   let streak = 0, maxWinStreak = 0, maxLossStreak = 0
-
-  const base = start ?? 0
-  let equity = base, peak = base, maxDd = 0, maxDdPct = 0
 
   for (const t of trades) {
     const pnl = netPnl(t)
@@ -50,13 +63,27 @@ export function journalStats(trades, start = null) {
     else streak = 0
     maxWinStreak = Math.max(maxWinStreak, streak)
     maxLossStreak = Math.max(maxLossStreak, -streak)
+  }
 
-    equity += pnl
+  // Drawdown on equity; deposits and withdrawals move the peak with them, so money
+  // moved in or out is never mistaken for a gain or a drawdown
+  const known = start != null
+  let equity = start ?? 0, peak = equity, maxDd = 0, maxDdPct = 0, deposits = 0, withdrawals = 0
+  for (const e of timeline(trades, cash)) {
+    if (e.cash != null) {
+      equity += e.cash
+      peak += e.cash
+      if (e.cash > 0) deposits += e.cash
+      else withdrawals -= e.cash
+    } else {
+      equity += e.pnl
+    }
     peak = Math.max(peak, equity)
     const dd = peak - equity
     if (dd > maxDd) maxDd = dd
-    if (start != null && peak > 0) maxDdPct = Math.max(maxDdPct, dd / peak)
+    if (known && peak > 0) maxDdPct = Math.max(maxDdPct, dd / peak)
   }
+  const capital = (start ?? 0) + deposits
 
   const net = grossProfit - grossLoss
   return {
@@ -75,26 +102,40 @@ export function journalStats(trades, start = null) {
     best,
     worst,
     maxDrawdown: maxDd,
-    maxDrawdownPct: start != null ? maxDdPct : null,
-    returnPct: start ? net / start : null,
+    maxDrawdownPct: known ? maxDdPct : null,
+    returnPct: known && capital > 0 ? net / capital : null,
+    capital: known ? capital : null,
+    deposits,
+    withdrawals,
     avgHoldMs: n ? holdMs / n : null,
     longs, longWinRate: longs ? longWins / longs : null,
     shorts, shortWinRate: shorts ? shortWins / shorts : null,
     maxWinStreak,
     maxLossStreak,
     start,
-    end: start != null ? start + net : null,
+    end: known ? (start ?? 0) + deposits - withdrawals + net : null,
   }
 }
 
-// Equity after each closed trade, starting from the balance before the first one
-export function equitySeries(trades, start = 0) {
-  if (!trades.length) return []
-  const points = [[trades[0].openMs, start]]
+// Equity after each closed trade and each deposit or withdrawal: [ms, equity, kind, amount].
+// An account funded from zero starts at its first deposit rather than at 0.
+export function equitySeries(trades, start = 0, cash = []) {
+  const events = timeline(trades, cash)
+  if (!events.length) return []
   let equity = start
-  for (const t of trades) {
-    equity += netPnl(t)
-    points.push([t.closeMs, equity])
+  let i = 0
+  const points = []
+  if (start === 0 && events[0].cash > 0) {
+    equity = events[0].cash
+    points.push([events[0].ms, equity, 'cash', events[0].cash])
+    i = 1
+  } else {
+    points.push([Math.min(trades[0]?.openMs ?? Infinity, events[0].ms), equity, 'start', 0])
+  }
+  for (; i < events.length; i++) {
+    const e = events[i]
+    equity += e.cash ?? e.pnl
+    points.push([e.ms, equity, e.cash != null ? 'cash' : 'trade', e.cash ?? e.pnl])
   }
   return points
 }

@@ -19,7 +19,11 @@ export default function JournalKpis({ stats, money }) {
   return (
     <div className="kpi-row journal-kpis">
       <Tile label="Net P&L" value={money(s.net, true)} tone={tone(s.net)} hint="Profit plus swap, commission and taxes">
-        {s.returnPct != null ? `${formatPct(s.returnPct)} on the starting balance` : `${s.count} trades`}
+        {s.returnPct == null
+          ? `${s.count} trades`
+          : s.deposits > 0
+            ? `${formatPct(s.returnPct)} on ${money(s.capital)} funded`
+            : `${formatPct(s.returnPct)} on the starting balance`}
       </Tile>
       <Tile label="Win rate" value={pct(s.winRate)} hint="Share of trades that closed with a net gain">
         {s.wins} won · {s.losses} lost

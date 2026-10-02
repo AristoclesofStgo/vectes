@@ -7,6 +7,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { assetForSymbol } from '../_shared/symbols.js'
+import { serverToUtc } from '../_shared/servertime.js'
 
 const MAX_TRADES = 2000
 const MAX_BODY_BYTES = 1_000_000
@@ -31,6 +32,7 @@ const str = (v: unknown, max = 64) => (typeof v === 'string' || typeof v === 'nu
 type RawTrade = Record<string, unknown>
 
 // MT4 times are broker-server seconds; offset = server time minus UTC, in minutes
+// (New York close brokers switch between +2h and +3h, see _shared/servertime.js)
 function toTrade(t: RawTrade, offsetMinutes: number) {
   const ticket = str(t.ticket, 32)
   const symbol = str(t.symbol, 32)
@@ -38,8 +40,8 @@ function toTrade(t: RawTrade, offsetMinutes: number) {
   const nums = ['lots', 'open_time', 'open_price', 'close_time', 'close_price', 'profit'] as const
   if (!ticket || !symbol || !side || !nums.every((k) => isNum(t[k]))) return null
   const lots = t.lots as number
-  const openTime = (t.open_time as number) - offsetMinutes * 60
-  const closeTime = (t.close_time as number) - offsetMinutes * 60
+  const openTime = serverToUtc(t.open_time as number, offsetMinutes)
+  const closeTime = serverToUtc(t.close_time as number, offsetMinutes)
   if (lots <= 0 || closeTime < openTime || openTime < 946684800) return null // before 2000: not a real trade
   const priceOrNull = (v: unknown) => (isNum(v) && v > 0 ? v : null)
   return {
@@ -58,6 +60,23 @@ function toTrade(t: RawTrade, offsetMinutes: number) {
     taxes: isNum(t.taxes) ? t.taxes : 0,
     swap: isNum(t.swap) ? t.swap : 0,
     profit: t.profit as number,
+    source: 'ea',
+  }
+}
+
+// Balance operations: deposits and withdrawals (kind balance) or broker credit
+function toCashFlow(c: RawTrade, offsetMinutes: number) {
+  const ticket = str(c.ticket, 32)
+  const kind = c.kind === 'balance' || c.kind === 'credit' ? c.kind : null
+  if (!ticket || !kind || !isNum(c.amount) || !isNum(c.time) || c.amount === 0) return null
+  const time = serverToUtc(c.time as number, offsetMinutes)
+  if (time < 946684800) return null
+  return {
+    ticket,
+    kind,
+    amount: c.amount,
+    time: new Date(time * 1000).toISOString(),
+    comment: str(c.comment, 120),
     source: 'ea',
   }
 }
@@ -83,7 +102,7 @@ Deno.serve(async (req) => {
   // ── Validate the payload ──
   const raw = await req.text()
   if (raw.length > MAX_BODY_BYTES) return json(413, { ok: false, error: 'Payload too large; send smaller batches' })
-  let body: { account?: Record<string, unknown>; trades?: RawTrade[] }
+  let body: { account?: Record<string, unknown>; trades?: RawTrade[]; cash?: RawTrade[] }
   try {
     body = JSON.parse(raw)
   } catch {
@@ -96,10 +115,12 @@ Deno.serve(async (req) => {
   if (!accountNumber || !broker) return json(400, { ok: false, error: 'account.number and account.broker are required' })
   if (!isNum(offset) || Math.abs(offset) > 14 * 60) return json(400, { ok: false, error: 'account.server_offset_minutes is invalid' })
   const rawTrades = Array.isArray(body.trades) ? body.trades : []
-  if (rawTrades.length > MAX_TRADES) return json(413, { ok: false, error: `At most ${MAX_TRADES} trades per request` })
+  const rawCash = Array.isArray(body.cash) ? body.cash : [] // sent by EA 1.10+
+  if (rawTrades.length + rawCash.length > MAX_TRADES) return json(413, { ok: false, error: `At most ${MAX_TRADES} records per request` })
 
   const trades = rawTrades.map((t) => toTrade(t, offset))
-  const rejected = trades.filter((t) => !t).length
+  const cash = rawCash.map((c) => toCashFlow(c, offset))
+  const rejected = trades.filter((t) => !t).length + cash.filter((c) => !c).length
 
   // ── Upsert account, then trades (dedup on account + ticket) ──
   const now = new Date().toISOString()
@@ -128,7 +149,22 @@ Deno.serve(async (req) => {
     if (error) return json(500, { ok: false, error: 'Could not save the trades', saved: i })
   }
 
+  const cashRows = cash
+    .filter((c) => c !== null)
+    .map((c) => ({ ...c, user_id: tokenRow.user_id, account_id: acc.id }))
+  if (cashRows.length) {
+    const { error } = await db.from('cash_flows').upsert(cashRows, { onConflict: 'account_id,ticket' })
+    if (error) return json(500, { ok: false, error: 'Could not save the balance operations' })
+  }
+
   await db.from('ingest_tokens').update({ last_used_at: now }).eq('id', tokenRow.id)
 
-  return json(200, { ok: true, account_id: acc.id, received: rawTrades.length, saved: rows.length, rejected })
+  return json(200, {
+    ok: true,
+    account_id: acc.id,
+    received: rawTrades.length + rawCash.length,
+    saved: rows.length,
+    cash_saved: cashRows.length,
+    rejected,
+  })
 })

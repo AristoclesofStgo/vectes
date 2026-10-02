@@ -41,6 +41,11 @@ async function seedDemo() {
   const trades = demoTrades.map((t) => ({ ...t, account_id: account.id }))
   const { error: tradesError } = await supabase.from('trades').insert(trades)
   if (tradesError) throw tradesError
+  const funded = new Date(Date.parse(trades[0].open_time) - 86400000).toISOString()
+  const { error: cashError } = await supabase.from('cash_flows').insert({
+    account_id: account.id, ticket: '50000001', kind: 'balance', amount: 10000, time: funded, comment: 'Initial deposit', source: 'demo',
+  })
+  if (cashError) throw cashError
 }
 
 // Remember where to land after a redirect-based sign-in (Google, email link)

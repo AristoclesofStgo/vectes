@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import PageHeader, { ComingSoon } from '../components/PageHeader.jsx'
+import PageHeader from '../components/PageHeader.jsx'
 import ConnectMT4 from '../components/journal/ConnectMT4.jsx'
 import JournalKpis from '../components/journal/JournalKpis.jsx'
 import EquityCurve from '../components/journal/EquityCurve.jsx'
@@ -7,7 +7,8 @@ import PnlCalendar from '../components/journal/PnlCalendar.jsx'
 import Breakdown from '../components/journal/Breakdown.jsx'
 import TradeChart from '../components/journal/TradeChart.jsx'
 import TradesTable from '../components/journal/TradesTable.jsx'
-import { listAccounts, listTrades } from '../lib/journal.js'
+import StatementImport from '../components/journal/StatementImport.jsx'
+import { listAccounts, listCashFlows, listTrades } from '../lib/journal.js'
 import { journalStats, startingBalance } from '../lib/journalStats.js'
 import { useJson } from '../lib/data.js'
 import { useStore } from '../store.js'
@@ -40,37 +41,44 @@ export default function Journal() {
   const [accounts, setAccounts] = useState(null)
   const [accountId, setAccountId] = useState(null)
   const [trades, setTrades] = useState(null)
+  const [cash, setCash] = useState([])
   const [error, setError] = useState(null)
   const [focus, setFocus] = useState(null)
+  const [version, setVersion] = useState(0) // bumped after an import to reload everything
 
-  useEffect(() => {
-    listAccounts().then(
-      (list) => {
-        setAccounts(list)
-        // Default to the account synced most recently, else the one with most trades
-        const best = [...list].sort((a, b) => (Date.parse(b.last_sync_at ?? 0) || 0) - (Date.parse(a.last_sync_at ?? 0) || 0) || b.tradeCount - a.tradeCount)[0]
-        setAccountId(best?.id ?? null)
-      },
-      () => setError('Could not load your journal. Please refresh the page.'),
-    )
-  }, [])
+  const loadAccounts = useCallback((prefer) => listAccounts().then(
+    (list) => {
+      setAccounts(list)
+      // Default to the account synced most recently, else the one with most trades
+      const best = [...list].sort((a, b) => (Date.parse(b.last_sync_at ?? 0) || 0) - (Date.parse(a.last_sync_at ?? 0) || 0) || b.tradeCount - a.tradeCount)[0]
+      setAccountId((current) => prefer ?? current ?? best?.id ?? null)
+    },
+    () => setError('Could not load your journal. Please refresh the page.'),
+  ), [])
+
+  useEffect(() => { loadAccounts() }, [loadAccounts])
 
   useEffect(() => {
     if (!accountId) return
     let alive = true
     setTrades(null)
     setFocus(null)
-    listTrades(accountId).then(
-      (rows) => alive && setTrades(rows),
+    Promise.all([listTrades(accountId), listCashFlows(accountId)]).then(
+      ([rows, flows]) => { if (alive) { setTrades(rows); setCash(flows) } },
       () => alive && setError('Could not load your trades. Please refresh the page.'),
     )
     return () => { alive = false }
-  }, [accountId])
+  }, [accountId, version])
+
+  const imported = useCallback((id) => {
+    loadAccounts(id)
+    setVersion((v) => v + 1)
+  }, [loadAccounts])
 
   const account = accounts?.find((a) => a.id === accountId)
   const money = useMemo(() => moneyFormatter(account?.currency || 'USD'), [account?.currency])
-  const start = useMemo(() => (trades ? startingBalance(account, trades) : null), [account, trades])
-  const stats = useMemo(() => (trades?.length ? journalStats(trades, start) : null), [trades, start])
+  const start = useMemo(() => (trades ? startingBalance(account, trades, cash) : null), [account, trades, cash])
+  const stats = useMemo(() => (trades?.length ? journalStats(trades, start, cash) : null), [trades, start, cash])
   const assets = useMemo(() => Object.fromEntries((assetsJson.data?.assets ?? []).map((a) => [a.id, a])), [assetsJson.data])
 
   const focusTrade = useCallback((t) => {
@@ -106,7 +114,7 @@ export default function Journal() {
         <>
           <JournalKpis stats={stats} money={money} />
           <div className="journal-grid">
-            <EquityCurve trades={trades} start={start} money={money} theme={theme} />
+            <EquityCurve trades={trades} cash={cash} start={start} money={money} theme={theme} />
             <PnlCalendar trades={trades} money={money} theme={theme} />
           </div>
           <TradeChart trades={trades} focus={focus} onFocus={setFocus} assets={assets} money={money} theme={theme} />
@@ -125,17 +133,13 @@ export default function Journal() {
       {empty && (
         <div className="card empty-journal">
           <h2>Connect your first account</h2>
-          <p className="muted">Follow the steps below. Your statistics, equity curve and trade chart appear after the first sync.</p>
+          <p className="muted">Connect MT4 with the Expert Advisor or import a statement below. Your statistics, equity curve and trade chart appear right after.</p>
         </div>
       )}
 
-      <ConnectMT4 />
+      <ConnectMT4 key={version} />
 
-      <ComingSoon
-        items={[
-          ['Statement import', 'Upload an MT4 Detailed Statement (.htm). It is parsed in your browser, symbols are mapped to Vectes assets and duplicates are skipped.'],
-        ]}
-      />
+      <StatementImport accounts={accounts} money={money} onImported={imported} />
     </>
   )
 }

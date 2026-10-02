@@ -1,4 +1,6 @@
 import { supabase } from './supabase.js'
+import { assetForSymbol } from './symbols.js'
+import { serverToUtc } from '../../../supabase/functions/_shared/servertime.js'
 
 // Data access for the Journal tab. Row-level security scopes every query to the
 // signed-in user, so no user filter is needed here.
@@ -14,7 +16,7 @@ function unwrap({ data, error }) {
 export async function listAccounts() {
   return unwrap(await supabase
     .from('trading_accounts')
-    .select('id, broker, account_number, currency, label, balance, equity, last_sync_at, created_at, trades(count)')
+    .select('id, broker, account_number, currency, label, balance, equity, last_sync_at, server_utc_offset_minutes, created_at, trades(count)')
     .order('created_at'))
     .map(({ trades, ...a }) => ({ ...a, tradeCount: trades?.[0]?.count ?? 0 }))
 }
@@ -81,4 +83,88 @@ export async function listTrades(accountId) {
 
 export async function updateTradeNotes(id, { notes, tags }) {
   unwrap(await supabase.from('trades').update({ notes: notes?.trim() || null, tags }).eq('id', id))
+}
+
+export async function listCashFlows(accountId) {
+  return unwrap(await supabase
+    .from('cash_flows')
+    .select('id, ticket, kind, amount, time, comment, source')
+    .eq('account_id', accountId)
+    .order('time'))
+    .map((c) => ({ ...c, amount: Number(c.amount), ms: Date.parse(c.time) }))
+}
+
+// Tickets already stored for an account, so the import preview can show what is new
+export async function existingTickets(accountId) {
+  const tickets = new Set()
+  for (const table of ['trades', 'cash_flows']) {
+    for (let from = 0; ; from += 1000) {
+      const page = unwrap(await supabase.from(table).select('ticket').eq('account_id', accountId).range(from, from + 999))
+      page.forEach((r) => tickets.add(r.ticket))
+      if (page.length < 1000) break
+    }
+  }
+  return tickets
+}
+
+// Statement rows -> the canonical trades / cash_flows shape
+export function normaliseStatement(parsed, offsetMinutes) {
+  const iso = (serverSeconds) => new Date(serverToUtc(serverSeconds, offsetMinutes) * 1000).toISOString()
+  const price = (v) => (v > 0 ? v : null)
+  return {
+    trades: parsed.trades.map((t) => ({
+      ticket: t.ticket,
+      symbol: t.symbol,
+      asset_id: assetForSymbol(t.symbol),
+      side: t.type,
+      volume: Math.round(t.lots * 100) / 100,
+      open_time: iso(t.open_time),
+      open_price: t.open_price,
+      close_time: iso(t.close_time),
+      close_price: t.close_price,
+      stop_loss: price(t.sl),
+      take_profit: price(t.tp),
+      commission: t.commission,
+      taxes: t.taxes,
+      swap: t.swap,
+      profit: t.profit,
+      source: 'statement',
+    })),
+    cash: parsed.cash.map((c) => ({
+      ticket: c.ticket,
+      kind: c.kind,
+      amount: c.amount,
+      time: iso(c.time),
+      comment: c.comment?.slice(0, 120) ?? null,
+      source: 'statement',
+    })),
+  }
+}
+
+// Insert what is new; rows the EA (or an earlier import) already stored are left untouched
+export async function importStatement({ parsed, accountId, offsetMinutes }) {
+  let id = accountId
+  if (!id) {
+    const created = unwrap(await supabase
+      .from('trading_accounts')
+      .insert({
+        broker: parsed.broker,
+        account_number: parsed.account,
+        currency: parsed.currency,
+        balance: parsed.balance,
+        server_utc_offset_minutes: offsetMinutes,
+      })
+      .select('id')
+      .single())
+    id = created.id
+  }
+  const { trades, cash } = normaliseStatement(parsed, offsetMinutes)
+  for (const [table, rows] of [['trades', trades], ['cash_flows', cash]]) {
+    for (let i = 0; i < rows.length; i += 500) {
+      unwrap(await supabase
+        .from(table)
+        .upsert(rows.slice(i, i + 500).map((r) => ({ ...r, account_id: id })), { onConflict: 'account_id,ticket', ignoreDuplicates: true }))
+    }
+  }
+  return id
 }
