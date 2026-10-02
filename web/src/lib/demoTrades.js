@@ -31,13 +31,17 @@ function mulberry32(seed) {
 const round = (x, d) => Math.round(x * 10 ** d) / 10 ** d
 const decimals = (price) => (price >= 1000 ? 2 : price >= 10 ? 3 : 5)
 
-export async function buildDemoTrades() {
-  const rand = mulberry32(20261002)
-  const pick = (lo, hi) => lo + rand() * (hi - lo)
+// Average bar range just before index i: sets stop and target distances in the asset's own terms
+function typicalRange(bars, i, n = 12) {
+  let sum = 0
+  for (let k = Math.max(0, i - n); k < i; k++) sum += bars[k][2] - bars[k][3]
+  return sum / Math.min(n, i) || bars[i][2] - bars[i][3]
+}
 
-  const candles = Object.fromEntries(await Promise.all(
-    INSTRUMENTS.map(async (i) => [i.asset, (await loadJson(`candles/4h/${i.asset}.json`)).data]),
-  ))
+function generate(candles, seed) {
+  const rand = mulberry32(seed)
+  const pick = (lo, hi) => lo + rand() * (hi - lo)
+  const inBar = (t) => (t + Math.floor(pick(0.05, 0.95) * 14400)) * 1000
 
   const totalWeight = INSTRUMENTS.reduce((s, i) => s + i.weight, 0)
   const trades = []
@@ -47,26 +51,43 @@ export async function buildDemoTrades() {
     const inst = INSTRUMENTS.find((i) => (w -= i.weight) < 0) ?? INSTRUMENTS[0]
     const bars = candles[inst.asset]
     const since = bars.at(-1)[0] - LOOKBACK_DAYS * 86400
-    const start = bars.findIndex((b) => b[0] >= since)
+    const start = Math.max(12, bars.findIndex((b) => b[0] >= since))
 
-    const hold = 1 + Math.floor(rand() ** 2 * 6) // mostly intraday, a few overnight
+    const hold = 1 + Math.floor(rand() ** 2 * 6) // planned holding time: mostly intraday, a few overnight
     const i = start + Math.floor(rand() * (bars.length - start - hold - 1))
     const j = i + hold
     const [t0, , h0, l0] = bars[i]
-    const [t1, , h1, l1] = bars[j]
-
     const entry = l0 + pick(0.2, 0.8) * (h0 - l0)
-    const exit = l1 + pick(0.2, 0.8) * (h1 - l1)
-    // A modest edge: trade with the move a little more often than against it
-    const withMove = rand() < 0.56
-    const side = (exit >= entry) === withMove ? 'buy' : 'sell'
+
+    // A modest read on direction: side agrees with the move into the planned exit bar a bit more often
+    const withMove = rand() < 0.57
+    const side = (bars[j][4] >= entry) === withMove ? 'buy' : 'sell'
     const dir = side === 'buy' ? 1 : -1
+
+    // Every trade has a stop and a target (1.5-2.5R); the candles decide which is hit first
+    const risk = typicalRange(bars, i) * pick(0.8, 1.4)
+    const stop = entry - dir * risk
+    const target = entry + dir * risk * pick(1.5, 2.5)
+    let exit = null
+    let exitBar = j
+    for (let k = i + 1; k <= j && exit == null; k++) {
+      const [, , hk, lk] = bars[k]
+      const hitStop = dir > 0 ? lk <= stop : hk >= stop
+      const hitTarget = dir > 0 ? hk >= target : lk <= target
+      if (hitStop) exit = stop // stop first when both fit in one bar: the cautious assumption
+      else if (hitTarget) exit = target
+      if (exit != null) exitBar = k
+    }
+    if (exit == null) {
+      const [, , hj, lj] = bars[j]
+      exit = lj + pick(0.2, 0.8) * (hj - lj)
+    }
 
     const lots = round(pick(...inst.lots), 2) || 0.01
     let profit = (exit - entry) * dir * inst.contract * lots
     if (inst.asset === 'JPY') profit /= exit // quote currency is JPY
-    const openTime = (t0 + Math.floor(pick(0.05, 0.95) * 14400)) * 1000
-    const closeTime = Math.max(openTime + 60000, (t1 + Math.floor(pick(0.05, 0.95) * 14400)) * 1000)
+    const openTime = inBar(t0)
+    const closeTime = Math.max(openTime + 60000, inBar(bars[exitBar][0]))
     const nights = Math.floor(closeTime / 86400000) - Math.floor(openTime / 86400000)
     const d = decimals(entry)
 
@@ -79,6 +100,8 @@ export async function buildDemoTrades() {
       open_price: round(entry, d),
       close_time: new Date(closeTime).toISOString(),
       close_price: round(exit, d),
+      stop_loss: round(stop, d),
+      take_profit: round(target, d),
       commission: round(-inst.commission * lots, 2),
       taxes: 0,
       swap: round(-nights * lots * pick(0.5, 3), 2),
@@ -89,4 +112,41 @@ export async function buildDemoTrades() {
 
   trades.sort((a, b) => a.open_time.localeCompare(b.open_time))
   return trades.map((t, k) => ({ ...t, ticket: String(50001000 + k * 7) }))
+}
+
+// Candles change every day, so a fixed seed can land on a losing streak. Walk a fixed
+// sequence of seeds and keep the first history that looks like a disciplined trader:
+// deterministic for a given dataset, and always a believable showcase.
+const ACCOUNT_SIZE = 10000
+
+function summary(trades) {
+  let equity = 0
+  let peak = 0
+  let drawdown = 0
+  let wins = 0
+  for (const t of trades) {
+    const pnl = t.profit + t.swap + t.commission
+    if (pnl > 0) wins++
+    equity += pnl
+    peak = Math.max(peak, equity)
+    drawdown = Math.min(drawdown, equity - peak)
+  }
+  return { net: equity / ACCOUNT_SIZE, winRate: wins / trades.length, drawdown: -drawdown / ACCOUNT_SIZE }
+}
+
+const believable = ({ net, winRate, drawdown }) =>
+  net >= 0.04 && net <= 0.18 && winRate >= 0.45 && winRate <= 0.62 && drawdown <= 0.15
+
+export async function buildDemoTrades({ seed = 20261002, attempts = 200 } = {}) {
+  const candles = Object.fromEntries(await Promise.all(
+    INSTRUMENTS.map(async (i) => [i.asset, (await loadJson(`candles/4h/${i.asset}.json`)).data]),
+  ))
+  let fallback = null
+  for (let k = 0; k < attempts; k++) {
+    const trades = generate(candles, seed + k)
+    const stats = summary(trades)
+    if (believable(stats)) return trades
+    if (!fallback || stats.net > fallback.net) fallback = { trades, net: stats.net }
+  }
+  return fallback.trades
 }
