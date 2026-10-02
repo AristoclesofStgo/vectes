@@ -91,6 +91,26 @@ def daily_candles(daily, asset_id):
     return df.drop_duplicates("time", keep="last")
 
 
+def fx_daily_candles(hourly, asset_id):
+    """Yahoo's daily FX bars close at the start of the day (London midnight), one
+    session behind US markets. Rebuild them from hourly bars using the FX market
+    convention: each trading day ends at 17:00 New York time."""
+    df = hourly[hourly["asset"] == asset_id].copy()
+    ny = df["time"].dt.tz_convert("America/New_York")
+    df["day"] = (ny + pd.Timedelta(hours=7)).dt.tz_localize(None).dt.normalize().dt.tz_localize("UTC")
+    agg = df.groupby("day").agg(open=("open", "first"), high=("high", "max"), low=("low", "min"),
+                                close=("close", "last"), volume=("volume", "sum"))
+    agg = agg.iloc[1:]   # the first session is only partially covered
+    agg = agg[agg.index.dayofweek < 5]   # stray weekend ticks are not a session
+    return agg.reset_index().rename(columns={"day": "time"})
+
+
+def day_bars(daily, hourly, asset):
+    if asset["category"] == "fx":
+        return fx_daily_candles(hourly, asset["id"])
+    return daily_candles(daily, asset["id"])
+
+
 def four_hour_candles(hourly, asset_id):
     df = hourly[hourly["asset"] == asset_id].set_index("time")
     agg = df.resample("4h", origin="epoch", label="left", closed="left").agg(
@@ -98,11 +118,13 @@ def four_hour_candles(hourly, asset_id):
     return agg.dropna(subset=["close"]).reset_index()
 
 
-def aligned_closes(daily, assets):
-    days = pd.date_range(daily["time"].dt.normalize().min(), daily["time"].dt.normalize().max(), freq="D", tz="UTC")
+def aligned_closes(bars_by_asset, assets):
+    first = min(b["time"].min() for b in bars_by_asset.values())
+    last = max(b["time"].max() for b in bars_by_asset.values())
+    days = pd.date_range(first, last, freq="D")
     series = {}
     for a in assets:
-        d = daily_candles(daily, a["id"]).set_index("time")["close"].reindex(days)
+        d = bars_by_asset[a["id"]].set_index("time")["close"].reindex(days)
         traded = d.notna()
         d = d.ffill().bfill()
         series[a["id"]] = {"close": [sig(v) for v in d], "traded": [int(v) for v in traded]}
@@ -201,9 +223,10 @@ def build():
     previous_assets = read_json(os.path.join(OUT_DIR, "assets.json"))
     fundamentals    = crypto_fundamentals(previous_assets)
 
-    sizes, coverage = {}, []
+    sizes, coverage, daily_bars = {}, [], {}
     for a in assets:
-        d1 = daily_candles(daily, a["id"])
+        d1 = day_bars(daily, hourly, a)
+        daily_bars[a["id"]] = d1
         h4 = four_hour_candles(hourly, a["id"])
         has_volume = bool(d1["volume"].fillna(0).gt(0).any())
         a["has_volume"] = has_volume
@@ -242,7 +265,7 @@ def build():
         })
     sizes["assets.json"] = write("assets.json", {"categories": CATEGORIES, "assets": catalog})
 
-    times, series = aligned_closes(daily, assets)
+    times, series = aligned_closes(daily_bars, assets)
     sizes["prices_1d.json"] = write("prices_1d.json", {"interval": "1d", "time": times, "series": series})
 
     pipeline = pipeline_dataset(hourly)
@@ -264,7 +287,8 @@ def build():
         "notes": [
             "Daily history is refreshed by a scheduled GitHub Action; the original AWS pipeline ran from 2026-06-27 to 2026-07-11.",
             "4h candles are aggregated from Yahoo hourly bars (UTC-aligned).",
-            "Some Yahoo FX daily bars report a high/low inside the open/close range; those wicks are widened to contain the body.",
+            "Yahoo's daily FX bars close at London midnight, one session behind US markets; FX daily candles are rebuilt from hourly bars with the 17:00 New York cutoff.",
+            "Any bar whose high/low falls inside its open/close range has its wicks widened to contain the body.",
             "Non-crypto markets do not trade on weekends/holidays; their last close is carried forward in prices_1d.json and flagged with traded = 0.",
             "Index levels (S&P 500, Nasdaq 100) exclude dividends.",
         ],

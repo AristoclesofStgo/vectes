@@ -16,11 +16,23 @@ export function chartTokens() {
     font: v('--font-ui'),
     seqLow: v('--seq-low'),
     seqHigh: v('--seq-high'),
+    diverging: [v('--div-neg'), v('--div-neg-soft'), v('--div-mid'), v('--div-pos-soft'), v('--div-pos')],
     series: (n) => v(`--series-${n}`),
   }
 }
 
-export const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
+// Ink that stays readable on top of a filled cell
+export function inkOn(hex, t) {
+  const n = parseInt(hex.replace('#', ''), 16)
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => {
+    const s = c / 255
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4
+  })
+  const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b
+  return lum > 0.35 ? '#0f1d30' : '#ffffff'
+}
+
+export const escapeHtml =(s) => String(s).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
 
 // Shared axis + tooltip styling: hairline solid grid, recessive axes
 export function baseOption(t) {
