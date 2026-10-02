@@ -10,8 +10,11 @@ export default function Footer() {
           Original pipeline: AWS Lambda, S3, EventBridge and Snowflake.
           For educational purposes only — not investment advice.
         </p>
-        <a className="muted link" href="https://github.com/AristoclesofStgo/aurum-etl" target="_blank" rel="noreferrer">
+        <a className="muted link" href="https://github.com/AristoclesofStgo/vectes" target="_blank" rel="noreferrer">
           Source on GitHub
+        </a>
+        <a className="muted link" href="https://github.com/AristoclesofStgo/aurum-etl" target="_blank" rel="noreferrer">
+          Original AWS pipeline
         </a>
       </div>
     </footer>

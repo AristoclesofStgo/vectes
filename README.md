@@ -1,10 +1,10 @@
 # Vectes — Market Data Pipeline & Interactive Dashboard
 
-[![Refresh data & deploy](https://github.com/AristoclesofStgo/aurum-etl/actions/workflows/deploy.yml/badge.svg)](https://github.com/AristoclesofStgo/aurum-etl/actions/workflows/deploy.yml)
+[![Refresh data & deploy](https://github.com/AristoclesofStgo/vectes/actions/workflows/deploy.yml/badge.svg)](https://github.com/AristoclesofStgo/vectes/actions/workflows/deploy.yml)
 
-**Live site → [aristoclesofstgo.github.io/aurum-etl](https://aristoclesofstgo.github.io/aurum-etl/)**
+**Live site → [aristoclesofstgo.github.io/vectes](https://aristoclesofstgo.github.io/vectes/)**
 
-An end-to-end data engineering project. It started as **Aurum**, a serverless ETL on AWS that captured crypto, currency, metal and oil prices every 6 hours into Snowflake. It grew into **Vectes**, an interactive market-data website that is rebuilt every day from one year of history for 24 assets, with charts, a portfolio backtester, cross-asset analytics and an in-browser SQL console.
+An end-to-end data engineering project. It started as **[Aurum](https://github.com/AristoclesofStgo/aurum-etl)**, a serverless ETL on AWS that captured crypto, currency, metal and oil prices every 6 hours into Snowflake. It grew into **Vectes**, an interactive market-data website that is rebuilt every day from one year of history for 24 assets, with charts, a portfolio backtester, cross-asset analytics and an in-browser SQL console.
 
 ![Vectes market view](docs/screenshots/market.png)
 
@@ -33,7 +33,7 @@ An end-to-end data engineering project. It started as **Aurum**, a serverless ET
 
 The project has two stages that share the same idea: extract → stage → transform → serve.
 
-**1 · Original ETL (June 27 – July 11, 2026)**
+**1 · Original ETL (June 27 – July 11, 2026)** · code in [aurum-etl](https://github.com/AristoclesofStgo/aurum-etl)
 
 ```mermaid
 flowchart LR
@@ -100,15 +100,10 @@ Every price the original pipeline captured is reconciled against Yahoo Finance's
 ## Repository structure
 
 ```
-├── lambdas/                     # Original AWS pipeline
-│   ├── extract/                 #   APIs → S3 (raw JSON)
-│   └── load/                    #   S3 → Snowflake
-├── snowflake/setup.sql          # Warehouse DDL (4 tables)
-├── tableau/                     # Exports and the original Tableau dashboard
 ├── data/pipeline/               # Cleaned captures from the AWS pipeline + reports
 ├── scripts/
 │   ├── catalog.py               # Single source of truth for the 24 assets
-│   ├── clean_pipeline_exports.py
+│   ├── clean_pipeline_exports.py # aurum-etl Snowflake exports → data/pipeline/
 │   ├── extract_history.py       # Yahoo Finance + CoinGecko → data/raw/
 │   └── build_web_data.py        # data/ → web/public/data/ (validated JSON)
 ├── web/                         # Vectes website (React + Vite)
@@ -121,8 +116,6 @@ Every price the original pipeline captured is reconciled against Yahoo Finance's
 
 ## Running locally
 
-**Website**
-
 ```bash
 pip install -r scripts/requirements.txt
 python scripts/extract_history.py     # download one year of history
@@ -130,12 +123,7 @@ python scripts/build_web_data.py      # build the site's datasets
 cd web && npm install && npm run dev
 ```
 
-**Original AWS pipeline**
-
-1. Copy `.env.example` to `.env` and fill in the AWS, Snowflake and ExchangeRate-API values.
-2. Create the S3 bucket and run `snowflake/setup.sql`.
-3. Deploy `lambdas/extract` and `lambdas/load` to AWS Lambda.
-4. Schedule the extract Lambda with EventBridge (every 6 hours) and trigger the load Lambda from S3.
+`data/pipeline/` is already committed. To rebuild it, clone [aurum-etl](https://github.com/AristoclesofStgo/aurum-etl) next to this repo (or set `AURUM_TABLEAU_DIR`) and run `python scripts/clean_pipeline_exports.py`. The setup of the original AWS pipeline is documented in that repo.
 
 ## Methodology notes
 

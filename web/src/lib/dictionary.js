@@ -1,5 +1,5 @@
 // Data dictionary: the tables queryable in the SQL playground, plus the
-// original Snowflake schema the AWS pipeline loaded (snowflake/setup.sql).
+// original Snowflake schema the AWS pipeline loaded (snowflake/setup.sql in the aurum-etl repo).
 
 export const SQL_TABLES = [
   {

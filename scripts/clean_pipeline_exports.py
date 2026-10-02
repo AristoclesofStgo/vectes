@@ -2,7 +2,9 @@
 Clean the original Snowflake exports (tableau/*.csv) captured by the AWS pipeline
 between 2026-06-27 and 2026-07-11, and persist them as a committed dataset.
 
-Input:  tableau/Crypto_*, FX_*, Metals_*, Oil_*   (raw, local only)
+Input:  <aurum-etl>/tableau/Crypto_*, FX_*, Metals_*, Oil_*   (raw, local only)
+        from a checkout of github.com/AristoclesofStgo/aurum-etl next to this
+        repo, or the folder given in AURUM_TABLEAU_DIR
 Output: data/pipeline/snapshots.csv               (clean, long format)
         data/pipeline/cleaning_report.json
 
@@ -22,7 +24,8 @@ import os
 import pandas as pd
 
 ROOT    = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC_DIR = os.path.join(ROOT, "tableau")
+SRC_DIR = os.environ.get("AURUM_TABLEAU_DIR",
+                         os.path.join(os.path.dirname(ROOT), "aurum-etl", "tableau"))
 OUT_DIR = os.path.join(ROOT, "data", "pipeline")
 
 SLOT        = pd.Timedelta(hours=6)
