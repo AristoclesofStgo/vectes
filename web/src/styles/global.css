@@ -928,17 +928,6 @@ code {
   font-size: 0.875rem;
 }
 
-.stack { margin: 0; border-top: 1px solid var(--border); }
-.stack-row {
-  display: grid;
-  grid-template-columns: 200px 1fr;
-  gap: 16px;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--border);
-}
-.stack-row dt { font-weight: 600; }
-.stack-row dd { margin: 0; }
-
 .cta {
   width: calc(100% - 2 * var(--gutter));
   max-width: calc(var(--max-width) - 2 * var(--gutter));
@@ -1026,7 +1015,6 @@ code {
   .home .header-inner { height: 60px; flex-wrap: nowrap; padding-top: 0; }
   .section { padding-top: 72px; }
   .feature-list { gap: 48px; }
-  .stack-row { grid-template-columns: 1fr; gap: 4px; }
   .journal-band { margin-top: 80px; }
   .band-inner { padding: 64px var(--gutter); }
   .cta { margin: 72px auto; }

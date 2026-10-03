@@ -50,14 +50,6 @@ const STEPS = [
   ['Trade as usual', 'Each closed trade is sent to your Journal with its entry, exit, swap and commission, and plotted on the same candles as the rest of Vectes.'],
 ]
 
-const STACK = [
-  ['Frontend', 'React · Vite · Zustand · lightweight-charts · ECharts · DuckDB-WASM'],
-  ['Data pipeline', 'Python · pandas · Yahoo Finance · CoinGecko · GitHub Actions'],
-  ['Backend', 'Supabase Auth · Postgres with row-level security · Edge Functions'],
-  ['Trading', 'MQL4 Expert Advisor · MT4 Detailed Statement parser'],
-  ['Origins', 'AWS Lambda · S3 · EventBridge · Snowflake · Tableau'],
-]
-
 function LoopVideo({ src, poster, className }) {
   const ref = useRef(null)
   // Respect reduced-motion: keep the poster frame instead of playing
@@ -122,7 +114,6 @@ export default function Home() {
           <nav className="home-nav" aria-label="Page sections">
             <button onClick={() => scrollTo('features')}>Features</button>
             <button onClick={() => scrollTo('journal')}>Journal</button>
-            <button onClick={() => scrollTo('built')}>How it's built</button>
           </nav>
           <div className="header-actions">
             <ThemeToggle />
@@ -215,21 +206,6 @@ export default function Home() {
               ))}
             </ol>
           </div>
-        </section>
-
-        <section id="built" className="section">
-          <div className="section-head">
-            <span className="eyebrow">How it's built</span>
-            <h2>An end-to-end data engineering project</h2>
-          </div>
-          <dl className="stack">
-            {STACK.map(([k, v]) => (
-              <div key={k} className="stack-row">
-                <dt>{k}</dt>
-                <dd className="muted">{v}</dd>
-              </div>
-            ))}
-          </dl>
         </section>
 
         <section className="cta">
