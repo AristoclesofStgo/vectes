@@ -1,4 +1,4 @@
-import { SNOWFLAKE_TABLES, SQL_TABLES } from '../../lib/dictionary.js'
+import { SQL_TABLES } from '../../lib/dictionary.js'
 
 function TableDoc({ table, open }) {
   return (
@@ -33,13 +33,11 @@ export default function DataDictionary() {
       <div className="card-head">
         <div>
           <h2>Data dictionary</h2>
-          <p className="muted small">The tables you can query above, and the original Snowflake schema they descend from.</p>
+          <p className="muted small">The tables you can query above.</p>
         </div>
       </div>
       <h3 className="detail-sub">Website datasets (SQL playground)</h3>
       {SQL_TABLES.map((t, i) => <TableDoc key={t.name} table={t} open={i === 0} />)}
-      <h3 className="detail-sub">Original Snowflake schema (AWS pipeline)</h3>
-      {SNOWFLAKE_TABLES.map((t) => <TableDoc key={t.name} table={t} />)}
     </section>
   )
 }

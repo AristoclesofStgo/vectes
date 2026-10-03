@@ -1,5 +1,4 @@
-// Data dictionary: the tables queryable in the SQL playground, plus the
-// original Snowflake schema the AWS pipeline loaded (snowflake/setup.sql in the aurum-etl repo).
+// Data dictionary: the tables queryable in the SQL playground.
 
 export const SQL_TABLES = [
   {
@@ -50,53 +49,4 @@ export const SQL_TABLES = [
       ['diff_bps', 'DOUBLE', 'Difference vs the Yahoo Finance hourly close at capture time, in basis points'],
     ],
   },
-]
-
-const common = [
-  ['LAST_UPDATED', 'TIMESTAMP_NTZ', 'Source timestamp of the quote'],
-  ['INGESTED_AT', 'TIMESTAMP_NTZ', 'When the extract Lambda ran'],
-]
-const commodity = (extra = []) => [
-  ['SYMBOL', 'VARCHAR', 'XAU, XAG, XPT, XPD, WTI or BRENT'],
-  ['NAME', 'VARCHAR', 'Display name'],
-  ['UNIT', 'VARCHAR', 'troy oz or barrel'],
-  ['CURRENCY', 'VARCHAR', 'Always USD'],
-  ['PRICE', 'FLOAT', 'Latest close from Yahoo Finance'],
-  ['OPEN_PRICE', 'FLOAT', 'Open of the 7-day window (bug: not the 24h open)'],
-  ['HIGH_24H / LOW_24H', 'FLOAT', 'Latest daily bar high / low'],
-  ['PRICE_CHANGE_24H / _PCT_24H', 'FLOAT', 'Really a ~7-day change, because of the OPEN_PRICE bug'],
-  ['HIGH_7D / LOW_7D', 'FLOAT', 'Range over the last 7 daily bars'],
-  ['HIGH_30D / LOW_30D', 'FLOAT', 'Never populated'],
-  ...extra,
-  ...common,
-]
-
-export const SNOWFLAKE_TABLES = [
-  {
-    name: 'CRYPTO_PRICES',
-    description: 'CoinGecko /coins/markets for BTC, ETH, SOL, XRP and ADA.',
-    columns: [
-      ['ID / SYMBOL / NAME', 'VARCHAR', 'CoinGecko id, ticker and name'],
-      ['CURRENT_PRICE', 'FLOAT', 'Price in USD'],
-      ['HIGH_24H / LOW_24H', 'FLOAT', 'Rolling 24h range'],
-      ['PRICE_CHANGE_24H / _PCT_24H', 'FLOAT', 'Rolling 24h change'],
-      ['MARKET_CAP / MARKET_CAP_RANK', 'FLOAT / INT', 'Capitalization and rank'],
-      ['TOTAL_VOLUME_24H', 'FLOAT', '24h traded volume in USD'],
-      ['CIRCULATING_SUPPLY / TOTAL_SUPPLY', 'FLOAT', 'Coins in circulation / issued'],
-      ['ATH / ATH_DATE / ATL / ATL_DATE', 'FLOAT / TIMESTAMP_NTZ', 'All-time high and low'],
-      ...common,
-    ],
-  },
-  {
-    name: 'FX_PRICES',
-    description: 'ExchangeRate-API latest rates vs USD (free tier, updated once a day).',
-    columns: [
-      ['BASE_CURRENCY / QUOTE_CURRENCY / PAIR', 'VARCHAR', 'Always USD as base, e.g. USD/EUR'],
-      ['RATE', 'FLOAT', 'Units of the quote currency per USD'],
-      ['BID … LOW_30D (11 columns)', 'FLOAT', 'Never populated by the free API'],
-      ...common,
-    ],
-  },
-  { name: 'METALS_PRICES', description: 'Yahoo Finance futures: gold, silver, platinum, palladium.', columns: commodity([['HIGH_52W / LOW_52W', 'FLOAT', 'Never populated']]) },
-  { name: 'OIL_PRICES', description: 'Yahoo Finance futures: WTI and Brent crude.', columns: commodity() },
 ]
