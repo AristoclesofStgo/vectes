@@ -12,7 +12,6 @@ import {
 import { PERIODS } from '../lib/backtest.js'
 import { CURRENCIES } from '../lib/currency.js'
 import { useJson } from '../lib/data.js'
-import { formatDate } from '../lib/format.js'
 import { useStore } from '../store.js'
 
 export default function Analysis() {
@@ -162,13 +161,6 @@ export default function Analysis() {
           </section>
 
           <StatsTable stats={stats} names={names} />
-
-          <p className="muted small methodology">
-            {data.returns[ids[0]].length} daily returns from {formatDate(data.sample.times[0])} to {formatDate(data.sample.times.at(-1))}, sampled on US trading days
-            so that 24/7 crypto and weekday markets line up (weekend crypto moves are folded into Monday). Volatility is annualized with 252 trading days.
-            {currencyId !== 'USD' && ` Assets quoted in USD are converted to ${currencyId}; currency pairs, yields and index levels keep their native quote.`}
-            {' '}Sharpe uses the average US 10-year Treasury yield over the period ({(data.riskFree * 100).toFixed(2)}%). Beta and correlation are measured against the S&P 500.
-          </p>
         </>
       )}
     </>
