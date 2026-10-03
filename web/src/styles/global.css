@@ -422,6 +422,16 @@ select option, select optgroup { background: var(--surface); color: var(--text);
 
 /* ── Market · economic calendar and news ──────────────── */
 .calendar-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.panel-title { display: flex; align-items: center; gap: 12px; }
+.panel-title h2 { font-family: var(--font-brand); font-size: 1.25rem; font-weight: 700; letter-spacing: -0.01em; }
+.panel-icon {
+  display: inline-grid; place-items: center;
+  width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.calendar-card .card-head, .news-card .card-head { align-items: center; margin-bottom: 16px; }
 .econ-list { max-height: 460px; overflow-y: auto; margin: 0 -20px; padding: 0 20px; scroll-behavior: smooth; }
 .econ-table { font-size: 0.8125rem; }
 .econ-table thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
