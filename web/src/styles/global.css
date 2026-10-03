@@ -662,7 +662,6 @@ select option, select optgroup { background: var(--surface); color: var(--text);
 .chart-foot { margin-top: 10px; }
 .empty-state { padding: 48px 0; text-align: center; }
 .table tr.highlight td { background: var(--accent-soft); font-weight: 600; }
-.methodology { max-width: 900px; }
 
 @media (max-width: 1080px) {
   .portfolio-grid { grid-template-columns: 1fr; }

@@ -11,7 +11,7 @@ import { usePortfolioConfig } from '../hooks/usePortfolioConfig.js'
 import { PERIODS, currencyRates, frontier, localPrices, metrics, simulate } from '../lib/backtest.js'
 import { currencyById } from '../lib/currency.js'
 import { useJson } from '../lib/data.js'
-import { formatCompact, formatDate, formatNumber } from '../lib/format.js'
+import { formatCompact, formatNumber } from '../lib/format.js'
 import { BENCHMARKS, toFractions } from '../lib/portfolio.js'
 import { useStore } from '../store.js'
 
@@ -99,8 +99,6 @@ export default function Portfolio() {
 
   const loading = !portfolio || !benchmarks
   const isDca = config.strategy !== 'lump'
-  const t0 = market?.times[market.start]
-  const t1 = market?.times.at(-1)
 
   return (
     <>
@@ -155,12 +153,6 @@ export default function Portfolio() {
           <BenchmarkTable portfolio={portfolio} benchmarks={benchmarks} money={money} />
           <BreakdownTable result={portfolio.result} targets={targets} assetsById={assetsById} money={money} />
           <FrontierChart data={frontierData} current={frontierData?.current} onApply={applyFrontier} theme={theme} />
-          <p className="muted small methodology">
-            Simulated from {formatDate(t0)} to {formatDate(t1)} using daily closes in {currency.label}.
-            Markets closed on weekends and holidays carry their last close forward; returns and volatility are measured per calendar day (365 per year).
-            Sharpe ratio uses the average US 10-year Treasury yield over the period ({(market.riskFree * 100).toFixed(2)}%) as the risk-free rate.
-            No fees, spreads or taxes. For educational purposes only, not investment advice.
-          </p>
         </>
       )}
     </>
