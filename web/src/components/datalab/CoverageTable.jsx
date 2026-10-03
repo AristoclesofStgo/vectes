@@ -3,10 +3,7 @@ export default function CoverageTable({ history, names }) {
   return (
     <section className="card" aria-label="History coverage">
       <div className="card-head">
-        <div>
-          <h2>History coverage</h2>
-          <p className="muted small">{history.source} · {history.start} to {history.end}</p>
-        </div>
+        <h2>History coverage</h2>
       </div>
       <div className="table-wrap coverage">
         <table className="table">
