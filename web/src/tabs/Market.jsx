@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader.jsx'
 import AssetDetail from '../components/market/AssetDetail.jsx'
@@ -55,8 +55,16 @@ export default function Market() {
 
   const { data, loading, error } = useMarketData({ asset, compareAsset, interval, currencyAsset })
   const bars = data?.bars ?? []
-  const replay = useReplay(bars.length, data?.key)
+  const times = useMemo(() => bars.map((b) => b.time), [bars])
+  const replay = useReplay(times, data?.key)
   const visibleCount = replay.active ? replay.cursor : bars.length
+
+  // Frame the chosen replay period: the window spans it, so new bars scroll into view
+  useEffect(() => {
+    if (replay.from == null || !times.length) return
+    const days = (times[times.length - 1] - times[replay.from]) / 86400
+    chartRef.current?.setRangeDays(Math.max(days, 2))
+  }, [replay.from, times])
 
   const indicators = useMemo(() => computeIndicators(bars, enabled), [bars, enabled])
   const precision = pricePrecision(bars.at(-1)?.close)
@@ -156,7 +164,7 @@ export default function Market() {
               onHover={setHoverIdx}
             />
           </div>
-          <ReplayControls replay={replay} total={bars.length} currentTime={bars[visibleCount - 1]?.time} intraday={interval === '4h'} />
+          <ReplayControls replay={replay} times={times} currentTime={bars[visibleCount - 1]?.time} intraday={interval === '4h'} />
           <p className="chart-note muted small">
             {compareAsset
               ? 'Percentage scale: both series are rebased to the first visible bar. '

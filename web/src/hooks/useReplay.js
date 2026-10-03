@@ -6,12 +6,33 @@ export const SPEEDS = [
   { id: 16, label: '16×', ms: 30 },
 ]
 
+// How far back the replay starts; bars before it stay on the chart as context
+export const RANGES = [
+  { id: '1w', label: '1W', days: 7 },
+  { id: '1m', label: '1M', days: 30 },
+  { id: '3m', label: '3M', days: 91 },
+  { id: '6m', label: '6M', days: 182 },
+  { id: '1y', label: '1Y', days: 365 },
+]
+const DEFAULT_RANGE = '3m'
+const MIN_BARS = 2
+
+// First bar at or after `time` (seconds), never before the second bar
+function indexAt(times, time) {
+  const i = times.findIndex((t) => t >= time)
+  return Math.max(MIN_BARS, i === -1 ? times.length - 1 : i)
+}
+
 /**
- * Market replay: reveals bars one at a time as if they were arriving live.
- * `cursor` is the number of visible bars (null when replay is off).
+ * Market replay: reveals bars one at a time as if they were arriving live,
+ * starting from a chosen range (1W…1Y) or date. `cursor` is the number of
+ * visible bars (null when replay is off); `from` is where playback began.
  */
-export function useReplay(total, resetKey) {
+export function useReplay(times, resetKey) {
+  const total = times.length
   const [cursor, setCursor] = useState(null)
+  const [from, setFrom] = useState(null)
+  const [range, setRange] = useState(DEFAULT_RANGE) // a RANGES id, or 'custom'
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(4)
   const timer = useRef(null)
@@ -19,16 +40,36 @@ export function useReplay(total, resetKey) {
   const stop = useCallback(() => {
     setPlaying(false)
     setCursor(null)
+    setFrom(null)
   }, [])
 
   // A different asset/interval/currency ends the replay
   useEffect(() => { stop() }, [resetKey, stop])
 
-  const start = useCallback(() => {
-    // Begin a quarter of the way in so indicators have history to work with
-    setCursor(Math.max(60, Math.floor(total * 0.25)))
+  const startAt = useCallback((index) => {
+    const i = Math.min(Math.max(MIN_BARS, index), total)
+    setFrom(i)
+    setCursor(i)
     setPlaying(true)
   }, [total])
+
+  const rangeStart = useCallback((id) => {
+    const r = RANGES.find((x) => x.id === id) ?? RANGES.find((x) => x.id === DEFAULT_RANGE)
+    return indexAt(times, times[total - 1] - r.days * 86400)
+  }, [times, total])
+
+  const start = useCallback(() => startAt(rangeStart(range === 'custom' ? DEFAULT_RANGE : range)), [startAt, rangeStart, range])
+
+  // Picking a range or a date restarts playback from there
+  const chooseRange = useCallback((id) => {
+    setRange(id)
+    startAt(rangeStart(id))
+  }, [startAt, rangeStart])
+
+  const chooseDate = useCallback((seconds) => {
+    setRange('custom')
+    startAt(indexAt(times, seconds))
+  }, [startAt, times])
 
   useEffect(() => {
     clearInterval(timer.current)
@@ -46,20 +87,24 @@ export function useReplay(total, resetKey) {
     return () => clearInterval(timer.current)
   }, [playing, speed, total, cursor == null])
 
+  // Play at the end goes back to the chosen start
   const togglePlay = useCallback(() => {
-    setCursor((c) => (c != null && c >= total ? Math.max(60, Math.floor(total * 0.25)) : c))
+    setCursor((c) => (c != null && c >= total ? from ?? c : c))
     setPlaying((p) => !p)
-  }, [total])
+  }, [total, from])
 
   const step = useCallback((delta) => {
     setPlaying(false)
-    setCursor((c) => Math.min(total, Math.max(2, (c ?? total) + delta)))
+    setCursor((c) => Math.min(total, Math.max(MIN_BARS, (c ?? total) + delta)))
   }, [total])
 
   const seek = useCallback((value) => {
     setPlaying(false)
-    setCursor(Math.min(total, Math.max(2, value)))
+    setCursor(Math.min(total, Math.max(MIN_BARS, value)))
   }, [total])
 
-  return { active: cursor != null, cursor, playing, speed, setSpeed, start, stop, togglePlay, step, seek }
+  return {
+    active: cursor != null, cursor, from, range, playing, speed,
+    setSpeed, start, stop, togglePlay, step, seek, chooseRange, chooseDate,
+  }
 }

@@ -443,13 +443,17 @@ select option, select optgroup { background: var(--surface); color: var(--text);
 
 .replay {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 14px;
+  flex-direction: column;
+  gap: 10px;
   padding: 10px 16px;
   border-top: 1px solid var(--border);
   background: var(--surface-2);
 }
+.replay-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; }
+.replay .replay-date { flex: none; width: 150px; height: 32px; font-size: 0.8125rem; }
+.replay .replay-date.active { border-color: var(--accent); }
+.replay-progress { font-variant-numeric: tabular-nums; }
+.replay-exit { margin-left: auto; }
 .replay-badge {
   display: inline-flex; align-items: center; gap: 7px;
   font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent);
