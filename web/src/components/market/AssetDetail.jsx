@@ -57,7 +57,7 @@ export default function AssetDetail({ asset, stats, currency, converted, ratePai
 
       {f && (
         <>
-          <h3 className="detail-sub">Fundamentals <span className="muted small">USD · CoinGecko</span></h3>
+          <h3 className="detail-sub">Fundamentals <span className="muted small">USD</span></h3>
           <dl className="stats-grid">
             <Stat label="Market cap">${formatCompact(f.market_cap)}</Stat>
             <Stat label="Rank">#{f.market_cap_rank}</Stat>
