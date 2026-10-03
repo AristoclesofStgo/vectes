@@ -106,7 +106,7 @@ export default function Market() {
       <TickerTape items={quotes} onSelect={selectAsset} />
       <PageHeader
         title="Market"
-        subtitle="One year of prices across crypto, currencies, precious metals, energy and equity indices."
+        subtitle="Prices of crypto, currencies, precious metals, energy and equity indices."
       />
 
       {asset && (
