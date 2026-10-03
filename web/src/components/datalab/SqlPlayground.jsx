@@ -55,8 +55,8 @@ export default function SqlPlayground() {
         <div>
           <h2>SQL playground</h2>
           <p className="muted small">
-            Query the site’s datasets with DuckDB, running entirely in your browser. Tables:{' '}
-            {SQL_TABLES.map((t, i) => <span key={t.name}><code>{t.name}</code>{i < SQL_TABLES.length - 1 ? ', ' : ''}</span>)}.
+            Tables:{' '}
+            {SQL_TABLES.map((t, i) => <span key={t.name}><code>{t.name}</code>{i < SQL_TABLES.length - 1 ? ', ' : ''}</span>)}
           </p>
         </div>
       </div>
@@ -85,7 +85,7 @@ export default function SqlPlayground() {
           {running ? 'Running…' : 'Run query'}
         </button>
         <span className="muted small">
-          {status ?? (result ? `${result.rows.length.toLocaleString('en-US')} rows · ${result.ms.toFixed(0)} ms` : 'Ctrl + Enter to run · the engine (~7 MB) loads on the first query')}
+          {status ?? (result ? `${result.rows.length.toLocaleString('en-US')} rows · ${result.ms.toFixed(0)} ms` : 'Ctrl + Enter to run')}
         </span>
         {result?.rows.length > 0 && (
           <button className="button ghost small push" onClick={() => downloadCsv(result)}>Download CSV</button>
