@@ -36,7 +36,27 @@ function CopyLink() {
   )
 }
 
-export default function SettingsBar({ config, update, currency, setCurrency }) {
+function DownloadPdf({ onDownload }) {
+  const [state, setState] = useState('idle')
+  const download = async () => {
+    setState('busy')
+    try {
+      await onDownload()
+      setState('idle')
+    } catch {
+      setState('failed')
+      setTimeout(() => setState('idle'), 2500)
+    }
+  }
+  return (
+    <button className="button" onClick={download} disabled={!onDownload || state === 'busy'}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v11M7 10.5l5 5 5-5M5 20h14" /></svg>
+      {state === 'busy' ? 'Preparing PDF…' : state === 'failed' ? 'PDF failed, try again' : 'Download PDF'}
+    </button>
+  )
+}
+
+export default function SettingsBar({ config, update, currency, setCurrency, onDownloadPdf }) {
   const [draft, setDraft] = useState(null)
   const commitCapital = () => {
     const value = Number(String(draft ?? '').replace(/[^0-9.]/g, ''))
@@ -67,7 +87,10 @@ export default function SettingsBar({ config, update, currency, setCurrency }) {
       <Segmented label="Period" options={PERIODS} value={config.period} onChange={(period) => update({ period })} />
       <Segmented label="Strategy" options={STRATEGIES} value={config.strategy} onChange={(strategy) => update({ strategy })} />
       <Segmented label="Rebalance" options={REBALANCING} value={config.rebalance} onChange={(rebalance) => update({ rebalance })} />
-      <div className="setting push"><CopyLink /></div>
+      <div className="setting push share-actions">
+        <CopyLink />
+        <DownloadPdf onDownload={onDownloadPdf} />
+      </div>
     </div>
   )
 }

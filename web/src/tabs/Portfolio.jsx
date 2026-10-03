@@ -13,6 +13,7 @@ import { currencyById } from '../lib/currency.js'
 import { useJson } from '../lib/data.js'
 import { formatCompact, formatNumber } from '../lib/format.js'
 import { BENCHMARKS, toFractions } from '../lib/portfolio.js'
+import { downloadPortfolioReport } from '../lib/portfolioReport.js'
 import { useStore } from '../store.js'
 
 const EMPTY = new Set()
@@ -99,6 +100,9 @@ export default function Portfolio() {
 
   const loading = !portfolio || !benchmarks
   const isDca = config.strategy !== 'lump'
+  const downloadPdf = loading ? null : () => downloadPortfolioReport({
+    config, currency, portfolio, benchmarks, targets, assetsById, url: window.location.href,
+  })
 
   return (
     <>
@@ -106,7 +110,7 @@ export default function Portfolio() {
         title="Portfolio"
         subtitle="Build a multi-asset portfolio and see how it would have performed, compared with classic benchmarks."
       />
-      <SettingsBar config={config} update={update} currency={currencyId} setCurrency={setCurrency} />
+      <SettingsBar config={config} update={update} currency={currencyId} setCurrency={setCurrency} onDownloadPdf={downloadPdf} />
 
       <div className="portfolio-grid">
         <aside className="portfolio-side">

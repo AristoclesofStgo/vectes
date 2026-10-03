@@ -777,6 +777,7 @@ code {
 .button.run { background: var(--accent); border-color: var(--accent); color: var(--bg); font-weight: 600; }
 .button.run:hover { filter: brightness(1.08); background: var(--accent); }
 .button:disabled { opacity: 0.6; cursor: progress; }
+.share-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .sql-error {
   margin: 12px 0 0; padding: 10px 12px; border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--down) 12%, transparent); color: var(--down);
@@ -1045,6 +1046,7 @@ code {
 }
 .auth-switch { text-align: center; }
 .button:disabled { opacity: 0.6; cursor: progress; }
+.share-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .gate-loading { min-height: 60vh; }
 .account-email { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .auth-demo {
