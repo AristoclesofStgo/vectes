@@ -486,12 +486,19 @@ select option, select optgroup { background: var(--surface); color: var(--text);
 }
 .watchlist-row:hover { background: var(--surface-2); }
 .watchlist-row.active { background: var(--accent-soft); border-left-color: var(--accent); }
+.watchlist-asset { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .watchlist-name { display: flex; flex-direction: column; min-width: 0; }
 .watchlist-name .small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .watchlist-quote { display: flex; flex-direction: column; align-items: flex-end; font-variant-numeric: tabular-nums; }
 
 .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .detail-head h2 { font-size: 1.125rem; }
+.detail-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* Asset logos: always round (flags are square SVGs) */
+.asset-logo { flex-shrink: 0; display: inline-block; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent); }
+.asset-logo.placeholder { background: var(--surface-2); }
+.legend-title { display: flex; align-items: center; gap: 6px; }
 .hero { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
 .hero-value { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
 .detail .note { margin-top: 14px; }

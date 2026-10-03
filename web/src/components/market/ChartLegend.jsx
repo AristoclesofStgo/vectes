@@ -1,6 +1,7 @@
 import { formatCompact, formatNumber } from '../../lib/format.js'
 import { INDICATORS } from '../../lib/indicators.js'
 import Change from './Change.jsx'
+import AssetLogo from '../AssetLogo.jsx'
 
 function Key({ slot }) {
   return <span className="line-key" style={{ background: `var(--series-${slot})` }} aria-hidden="true" />
@@ -15,6 +16,7 @@ export default function ChartLegend({ asset, interval, currencyId, bar, prevBar,
   return (
     <div className="chart-legend">
       <div className="legend-title">
+        <AssetLogo id={asset.id} size={18} />
         <strong>{currencyId ? `${asset.id}/${currencyId}` : asset.pair}</strong>
         <span className="muted"> · {asset.name} · {interval.toUpperCase()}</span>
       </div>
