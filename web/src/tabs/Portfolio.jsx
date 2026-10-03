@@ -106,7 +106,7 @@ export default function Portfolio() {
     <>
       <PageHeader
         title="Portfolio"
-        subtitle="Build a multi-asset portfolio and see how it would have performed — compared with classic benchmarks."
+        subtitle="Build a multi-asset portfolio and see how it would have performed, compared with classic benchmarks."
       />
       <SettingsBar config={config} update={update} currency={currencyId} setCurrency={setCurrency} />
 
@@ -159,7 +159,7 @@ export default function Portfolio() {
             Simulated from {formatDate(t0)} to {formatDate(t1)} using daily closes in {currency.label}.
             Markets closed on weekends and holidays carry their last close forward; returns and volatility are measured per calendar day (365 per year).
             Sharpe ratio uses the average US 10-year Treasury yield over the period ({(market.riskFree * 100).toFixed(2)}%) as the risk-free rate.
-            No fees, spreads or taxes. For educational purposes only — not investment advice.
+            No fees, spreads or taxes. For educational purposes only, not investment advice.
           </p>
         </>
       )}

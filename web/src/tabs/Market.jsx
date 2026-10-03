@@ -175,7 +175,7 @@ export default function Market() {
                 ? 'Percentage scale: both series are rebased to the first visible bar. '
                 : ''}
               {interval === '4h' ? '4H candles aggregated from Yahoo Finance hourly bars (UTC).' : 'Daily candles from Yahoo Finance (UTC).'}
-              {asset && currencyId !== 'USD' && !currencyAsset ? ` Shown in its native quote — ${currencyId} pricing does not apply to this asset.` : ''}
+              {asset && currencyId !== 'USD' && !currencyAsset ? ` Shown in its native quote: ${currencyId} pricing does not apply to this asset.` : ''}
             </p>
           </section>
 

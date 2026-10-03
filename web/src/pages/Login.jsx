@@ -8,7 +8,7 @@ import { useAuth, hasAccess, rememberDestination, DEMO_DAYS } from '../lib/auth.
 function friendly(error) {
   const msg = error?.message ?? ''
   if (/invalid login credentials/i.test(msg)) return 'Wrong email or password.'
-  if (/email not confirmed/i.test(msg)) return 'Please confirm your email first — check your inbox for the link.'
+  if (/email not confirmed/i.test(msg)) return 'Please confirm your email first. Check your inbox for the link.'
   if (/already registered/i.test(msg)) return 'An account with this email already exists. Try logging in.'
   if (/password should be/i.test(msg)) return 'Use a password with at least 8 characters.'
   if (/rate limit/i.test(msg)) return 'Too many attempts. Please wait a minute and try again.'

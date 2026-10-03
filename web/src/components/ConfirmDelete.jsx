@@ -13,7 +13,7 @@ export default function ConfirmDelete({ title, children, word, action, onConfirm
     try {
       await onConfirm()
     } catch {
-      setError('That did not work. Nothing was deleted — please try again.')
+      setError('That did not work. Nothing was deleted. Please try again.')
       setBusy(false)
     }
   }

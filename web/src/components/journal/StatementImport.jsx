@@ -61,7 +61,7 @@ export default function StatementImport({ accounts, money, onImported }) {
       setState({ step: 'done', newTrades: trades.length, newCash: cash.length })
       onImported(id)
     } catch {
-      setState((s) => ({ ...s, step: 'preview', error: 'The import failed. Anything already saved is kept — try again to add the rest.' }))
+      setState((s) => ({ ...s, step: 'preview', error: 'The import failed. Anything already saved is kept, so try again to add the rest.' }))
     }
   }
 

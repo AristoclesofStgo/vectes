@@ -109,7 +109,7 @@ export default function SqlPlayground() {
             </tbody>
           </table>
           {result.rows.length > MAX_ROWS && (
-            <p className="muted small">Showing the first {MAX_ROWS} of {result.rows.length.toLocaleString('en-US')} rows — download the CSV for all of them.</p>
+            <p className="muted small">Showing the first {MAX_ROWS} of {result.rows.length.toLocaleString('en-US')} rows. Download the CSV for all of them.</p>
           )}
         </div>
       )}

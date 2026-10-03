@@ -29,7 +29,7 @@ export default function DataLab() {
     <>
       <PageHeader
         title="Data Lab"
-        subtitle="How the data behind Vectes is extracted, cleaned, validated and served — and a SQL console to explore it yourself."
+        subtitle="How the data behind Vectes is extracted, cleaned, validated and served, and a SQL console to explore it yourself."
       />
 
       <PipelineDiagram quality={quality.data} />

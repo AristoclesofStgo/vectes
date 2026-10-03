@@ -21,7 +21,7 @@ function CopyButton({ text, label = 'Copy' }) {
 function NewToken({ token, onDone }) {
   return (
     <div className="token-reveal" role="status">
-      <p><strong>Your new token.</strong> Copy it now and paste it into the EA inputs — it won't be shown again.</p>
+      <p><strong>Your new token.</strong> Copy it now and paste it into the EA inputs. It won't be shown again.</p>
       <div className="token-row">
         <code className="token-value">{token}</code>
         <CopyButton text={token} />

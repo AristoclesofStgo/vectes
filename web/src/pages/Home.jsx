@@ -45,7 +45,7 @@ const FEATURES = [
 ]
 
 const STEPS = [
-  ['Create your account', 'Sign up with email or Google. Your trades are private to you — every table is protected by row-level security.'],
+  ['Create your account', 'Sign up with email or Google. Your trades are private to you: every table is protected by row-level security.'],
   ['Attach the Expert Advisor', 'Generate a personal token in Vectes and paste it into the Vectes EA on any MT4 chart. No broker password is ever requested.'],
   ['Trade as usual', 'Each closed trade is sent to your Journal with its entry, exit, swap and commission, and plotted on the same candles as the rest of Vectes.'],
 ]

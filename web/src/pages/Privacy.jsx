@@ -25,7 +25,7 @@ export default function Privacy() {
           <li><strong>Your sign-in.</strong> Your email and password are handled by Supabase Auth; the password is stored only as a secure hash. Demo visitors get an anonymous sign-in with no email.</li>
           <li><strong>Trading data you send.</strong> For each trading account: broker name, account number, currency, balance and the broker's time zone. For each closed trade: ticket, symbol, side, volume, open and close times and prices, stop loss, take profit, commission, swap, taxes and profit. Deposits and withdrawals with their amount, time and comment.</li>
           <li><strong>Your notes and tags</strong> on trades.</li>
-          <li><strong>Expert Advisor tokens</strong> — only a SHA-256 hash and the first characters, never the token itself.</li>
+          <li><strong>Expert Advisor tokens:</strong> only a SHA-256 hash and the first characters, never the token itself.</li>
         </ul>
 
         <h2>What Vectes never stores</h2>

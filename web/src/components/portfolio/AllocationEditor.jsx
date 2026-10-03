@@ -35,7 +35,7 @@ export default function AllocationEditor({ weights, onChange, categories, invest
       </div>
 
       <div className="alloc-rows">
-        {held.length === 0 && <p className="muted small empty">No assets yet — pick a preset or add one below. Unallocated capital is held as cash.</p>}
+        {held.length === 0 && <p className="muted small empty">No assets yet. Pick a preset or add one below. Unallocated capital is held as cash.</p>}
         {held.map((a) => (
           <div key={a.id} className="alloc-row">
             <div className="alloc-name">
@@ -89,7 +89,7 @@ export default function AllocationEditor({ weights, onChange, categories, invest
         <div className="alloc-total-text small">
           {total > 100.001 ? (
             <>
-              <span className="down">Over-allocated by {(total - 100).toFixed(1)}% — weights are scaled down in the simulation.</span>
+              <span className="down">Over-allocated by {(total - 100).toFixed(1)}%: weights are scaled down in the simulation.</span>
               <button className="button ghost small" onClick={scaleTo100}>Scale to 100%</button>
             </>
           ) : (

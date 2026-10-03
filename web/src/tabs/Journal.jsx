@@ -130,7 +130,7 @@ export default function Journal() {
           onCancel={() => setRemoving(false)}
         >
           <p>This deletes the account from Vectes with its {account.tradeCount} trades, deposits, notes and tags. It can't be undone.</p>
-          <p>If the Expert Advisor is still attached in MT4, revoke its token first — otherwise the next sync adds the account back.</p>
+          <p>If the Expert Advisor is still attached in MT4, revoke its token first, otherwise the next sync adds the account back.</p>
         </ConfirmDelete>
       )}
 

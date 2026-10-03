@@ -157,7 +157,7 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
       {failed && <p className="card error">Could not load the candles for {asset}.</p>}
       {(plotted.outside > 0 || unmapped > 0) && (
         <p className="muted small chart-note">
-          {plotted.outside > 0 && <>{plotted.outside} {asset} trade{plotted.outside > 1 ? 's are' : ' is'} outside the candle history — candles refresh daily after the US close, so today's trades appear tomorrow. </>}
+          {plotted.outside > 0 && <>{plotted.outside} {asset} trade{plotted.outside > 1 ? 's are' : ' is'} outside the candle history. Candles refresh daily after the US close, so today's trades appear tomorrow. </>}
           {unmapped > 0 && <>{unmapped} trade{unmapped > 1 ? 's use symbols' : ' uses a symbol'} without Vectes candles (still counted in every statistic).</>}
         </p>
       )}
