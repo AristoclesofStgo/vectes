@@ -159,15 +159,14 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
 
   // Trade markers: arrow at the entry price, circle at the exit price
   const plotted = useMemo(() => {
-    if (!bars?.length) return { markers: [], outside: 0 }
+    if (!bars?.length) return { markers: [] }
     const entryColor = cssVar('--series-1')
     const exitColor = cssVar('--series-4')
     const markers = []
-    let outside = 0
     for (const t of assetTrades) {
       const open = barTime(bars, t.openMs / 1000, iv.seconds)
       const close = barTime(bars, t.closeMs / 1000, iv.seconds)
-      if (open == null || close == null) { outside++; continue }
+      if (open == null || close == null) continue
       const focused = focus?.id === t.id
       const size = focused ? 2 : 1
       markers.push({
@@ -180,7 +179,7 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
       })
     }
     markers.sort((a, b) => a.time - b.time)
-    return { markers, outside }
+    return { markers }
   }, [bars, assetTrades, focus, money, theme, iv]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const plottedRef = useRef(null)
@@ -200,8 +199,6 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
     const pad = Math.max(iv.seconds * 30, (to - from) * 0.15)
     chart.timeScale().setVisibleRange({ from: Math.max(bars[0].time, from - pad), to: Math.min(bars.at(-1).time, to + pad) })
   }, [focus, bars, asset, assetTrades, plotted, iv])
-
-  const unmapped = trades.length - trades.filter((t) => t.asset_id).length
 
   return (
     <section className="card trade-chart" aria-label="Trades on the chart">
@@ -244,18 +241,6 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
       )}
       {!traded.length && <p className="muted small">None of these symbols has Vectes candles yet.</p>}
       {failed && <p className="card error">Could not load the candles for {asset}.</p>}
-      {(plotted.outside > 0 || unmapped > 0) && (
-        <p className="muted small chart-note">
-          {plotted.outside > 0 && (
-            <>
-              {plotted.outside} {asset} trade{plotted.outside > 1 ? 's are' : ' is'} outside the {INTERVAL_NAMES[iv.id]} history
-              {iv.days < 365 ? ` (the last ${iv.days} days; pick a longer interval for older trades)` : ''}.
-              {' '}Candles refresh daily after the US close, so today's trades appear tomorrow.{' '}
-            </>
-          )}
-          {unmapped > 0 && <>{unmapped} trade{unmapped > 1 ? 's use symbols' : ' uses a symbol'} without Vectes candles (still counted in every statistic).</>}
-        </p>
-      )}
     </section>
   )
 }
