@@ -18,7 +18,6 @@ function relevantCurrencies(asset) {
   return new Set(['USD', ...own])
 }
 
-const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
 const dayKey = (ms) => new Date(ms).toLocaleDateString('en-CA') // local YYYY-MM-DD
 const dayLabel = (ms) => new Date(ms).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
 const timeLabel = (ms) => new Date(ms).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
@@ -68,10 +67,7 @@ export default function EconomicCalendar({ data, asset }) {
   return (
     <section className="card calendar-card" aria-labelledby="econ-title">
       <div className="card-head">
-        <div>
-          <h2 id="econ-title">Economic calendar</h2>
-          <span className="muted small">This week · times in your time zone ({tz.replace(/_/g, ' ')})</span>
-        </div>
+        <h2 id="econ-title">Economic calendar</h2>
         <div className="calendar-filters">
           <div className="segmented" role="group" aria-label="Impact">
             {['high', 'medium', 'low'].map((id) => (

@@ -23,10 +23,7 @@ export default function MarketNews({ data, asset }) {
   return (
     <section className="card news-card" aria-labelledby="news-title">
       <div className="card-head">
-        <div>
-          <h2 id="news-title">Market news</h2>
-          <span className="muted small">Latest headlines · open on the publisher's site</span>
-        </div>
+        <h2 id="news-title">Market news</h2>
         <div className="segmented" role="tablist" aria-label="News">
           <button role="tab" aria-selected={tab === 'asset'} className={tab === 'asset' ? 'active' : ''} onClick={() => pick('asset')}>
             {asset ? asset.name : 'Selected asset'}
@@ -47,7 +44,7 @@ export default function MarketNews({ data, asset }) {
                   {tab === 'all' && n.assets?.length > 0 && (
                     <span className="news-assets">{n.assets.slice(0, 4).map((id) => <AssetLogo key={id} id={id} size={14} />)}</span>
                   )}
-                  <time dateTime={n.published}>{ago(n.published)}</time> · Yahoo Finance
+                  <time dateTime={n.published}>{ago(n.published)}</time>
                 </span>
               </a>
             </li>
