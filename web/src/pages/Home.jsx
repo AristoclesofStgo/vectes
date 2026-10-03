@@ -132,7 +132,7 @@ export default function Home() {
       <TickerTape items={quotes} onSelect={(id) => navigate(`/market?asset=${id}`)} />
 
       <main>
-        <section className="hero">
+        <section className="home-hero">
           <div className="hero-copy">
             <span className="eyebrow">Market data · Trading journal</span>
             <h1>Your trades, measured against the market.</h1>
@@ -156,15 +156,15 @@ export default function Home() {
 
         <section className="stats-band" aria-label="Vectes in numbers">
           {STATS.map(([value, label]) => (
-            <div key={label} className="stat">
+            <div key={label} className="home-stat">
               <strong>{value}</strong>
               <span className="muted">{label}</span>
             </div>
           ))}
         </section>
 
-        <section id="features" className="section">
-          <div className="section-head">
+        <section id="features" className="home-section">
+          <div className="home-section-head">
             <span className="eyebrow">Features</span>
             <h2>Everything in one place</h2>
             <p className="muted">Five tabs, one dataset. All of it is available in the demo.</p>
@@ -187,7 +187,7 @@ export default function Home() {
         <section id="journal" className="journal-band">
           <LoopVideo className="band-video" src={media('journal.mp4')} poster={media('journal-poster.jpg')} />
           <div className="band-inner">
-            <div className="section-head">
+            <div className="home-section-head">
               <span className="eyebrow">New · Journal</span>
               <h2>Your MetaTrader 4 trades, synced automatically</h2>
               <p>
