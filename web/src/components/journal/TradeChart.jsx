@@ -38,6 +38,43 @@ function barTime(bars, t, barSeconds) {
   return bars[lo].time
 }
 
+// Vectes metals, oil and indices are futures; brokers quote spot or CFDs a few dollars away.
+// The typical gap is the median of (trade price - mid price of the bar it happened in),
+// over entries and exits. Under 0.1% it is noise (spot FX, crypto) and is ignored, and
+// demo trades are left out: they are generated from these very candles.
+const MIN_GAP = 0.001
+
+function brokerOffset(bars, trades, barSeconds) {
+  const gaps = []
+  for (const t of trades) {
+    if (t.source === 'demo') continue
+    for (const [ms, price] of [[t.openMs, t.open_price], [t.closeMs, t.close_price]]) {
+      const time = barTime(bars, ms / 1000, barSeconds)
+      if (time == null) continue
+      const bar = bars[barIndex(bars, time)]
+      gaps.push(price - (bar.high + bar.low) / 2)
+    }
+  }
+  if (gaps.length < 2) return 0
+  gaps.sort((a, b) => a - b)
+  const mid = gaps.length >> 1
+  const median = gaps.length % 2 ? gaps[mid] : (gaps[mid - 1] + gaps[mid]) / 2
+  return Math.abs(median) / bars.at(-1).close >= MIN_GAP ? median : 0
+}
+
+// Index of the bar that starts at `time` (bars are sorted)
+function barIndex(bars, time) {
+  let lo = 0, hi = bars.length - 1
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (bars[mid].time < time) lo = mid + 1
+    else hi = mid
+  }
+  return lo
+}
+
+const shiftBars = (bars, d) => bars.map((b) => ({ ...b, open: b.open + d, high: b.high + d, low: b.low + d, close: b.close + d }))
+
 export default function TradeChart({ trades, focus, onFocus, assets, money, theme }) {
   const containerRef = useRef(null)
   const chartRef = useRef(null)
@@ -46,6 +83,7 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
   const [bars, setBars] = useState(null)
   const [failed, setFailed] = useState(false)
   const [intervalId, setIntervalId] = useState(DEFAULT_INTERVAL)
+  const [aligned, setAligned] = useState(true)
   const iv = INTERVALS.find((x) => x.id === intervalId)
 
   // "Show on chart" opens the trade on an interval that suits its length
@@ -60,6 +98,10 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
   const [picked, setPicked] = useState(null)
   const asset = focus?.asset_id ?? (traded.includes(picked) ? picked : traded[0])
   const assetTrades = useMemo(() => trades.filter((t) => t.asset_id === asset), [trades, asset])
+
+  // Gap between the broker's prices and the Vectes candles, and the candles to draw
+  const offset = useMemo(() => (bars?.length ? brokerOffset(bars, assetTrades, iv.seconds) : 0), [bars, assetTrades, iv])
+  const shown = useMemo(() => (bars && offset && aligned ? shiftBars(bars, offset) : bars), [bars, offset, aligned])
 
   useEffect(() => {
     const chart = createChart(containerRef.current, {
@@ -88,7 +130,7 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
   // Candles + theme
   useEffect(() => {
     const chart = chartRef.current
-    if (!chart || !bars?.length) return
+    if (!chart || !shown?.length) return
     if (seriesRef.current) { chart.removeSeries(seriesRef.current); seriesRef.current = null; markersRef.current = null }
     const c = { surface: cssVar('--surface'), text: cssVar('--text-muted'), grid: cssVar('--chart-grid'), up: cssVar('--up'), down: cssVar('--down'), crosshair: cssVar('--chart-crosshair') }
     chart.applyOptions({
@@ -99,7 +141,7 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
         horzLine: { color: c.crosshair, labelBackgroundColor: c.crosshair, style: LineStyle.Solid, width: 1 },
       },
     })
-    const precision = pricePrecision(bars.at(-1).close)
+    const precision = pricePrecision(shown.at(-1).close)
     const series = chart.addSeries(CandlestickSeries, {
       upColor: c.up, downColor: c.down, wickUpColor: c.up, wickDownColor: c.down, borderVisible: false,
       priceFormat: {
@@ -108,10 +150,12 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
         formatter: (p) => p.toLocaleString('en-US', { minimumFractionDigits: precision, maximumFractionDigits: precision }),
       },
     })
-    series.setData(bars)
+    series.setData(shown)
     seriesRef.current = series
     markersRef.current = createSeriesMarkers(series, [])
-  }, [bars, theme])
+    // A redraw drops the markers; put them back
+    if (plottedRef.current) markersRef.current.setMarkers(plottedRef.current.markers)
+  }, [shown, theme])
 
   // Trade markers: arrow at the entry price, circle at the exit price
   const plotted = useMemo(() => {
@@ -139,6 +183,8 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
     return { markers, outside }
   }, [bars, assetTrades, focus, money, theme, iv]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const plottedRef = useRef(null)
+  plottedRef.current = plotted
   useEffect(() => { markersRef.current?.setMarkers(plotted.markers) }, [plotted])
 
   // Frame the focused trade, otherwise the span of this asset's trades
@@ -186,6 +232,16 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
         )}
       </div>
       <div ref={containerRef} className="trade-chart-canvas" />
+      {offset !== 0 && (
+        <label className="align-toggle small">
+          <input type="checkbox" checked={aligned} onChange={(e) => setAligned(e.target.checked)} />
+          <span>
+            Match your broker's prices: candles {aligned ? 'shifted' : 'can be shifted'}{' '}
+            <strong>{offset > 0 ? '+' : '−'}{Math.abs(offset).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: pricePrecision(bars.at(-1).close) })}</strong>
+            <span className="muted"> · Vectes {assets[asset]?.name ?? asset} uses futures prices, your broker quotes spot or CFD</span>
+          </span>
+        </label>
+      )}
       {!traded.length && <p className="muted small">None of these symbols has Vectes candles yet.</p>}
       {failed && <p className="card error">Could not load the candles for {asset}.</p>}
       {(plotted.outside > 0 || unmapped > 0) && (

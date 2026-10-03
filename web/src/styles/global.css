@@ -1160,6 +1160,8 @@ code {
 .trade-chart .chart-note { margin-top: 10px; }
 .trade-chart { scroll-margin-top: 76px; }
 .trade-chart-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.align-toggle { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; cursor: pointer; }
+.align-toggle input { margin-top: 3px; accent-color: var(--accent); }
 .marker-key.entry { color: var(--series-1); }
 .marker-key.exit { color: var(--series-4); }
 
