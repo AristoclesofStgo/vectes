@@ -3,7 +3,9 @@ Extract one year of market history for every asset in the catalog.
 
 Output (data/raw/, not committed):
   yahoo_1d.csv          daily OHLCV, long format
-  yahoo_1h.csv          hourly OHLCV, long format (aggregated to 4h by the build step)
+  yahoo_1h.csv          hourly OHLCV, long format (1h candles, and 4h after aggregation)
+  yahoo_15m.csv         15-minute OHLCV for the last 60 days (Yahoo's limit), Journal charts
+  yahoo_5m.csv          5-minute OHLCV for the last 30 days, Journal charts
   coingecko_markets.json  current crypto fundamentals (market cap, supply, ATH)
   extract_log.json      per-ticker status of this run
 
@@ -12,6 +14,7 @@ retried individually. If one still fails, build_web_data.py aborts the deploy.
 """
 import json
 import os
+import sys
 import time
 from datetime import datetime, timezone
 
@@ -26,10 +29,12 @@ RAW_DIR = os.path.join(ROOT, "data", "raw")
 
 PERIOD  = "1y"
 RETRIES = 3
+# Yahoo serves intraday bars below 1h for the last 60 days only; 5m is kept to 30 days for size
+PERIODS = {"1d": PERIOD, "1h": PERIOD, "15m": "60d", "5m": "30d"}
 
 
 def download(tickers, interval):
-    data = yf.download(tickers, period=PERIOD, interval=interval, group_by="ticker",
+    data = yf.download(tickers, period=PERIODS[interval], interval=interval, group_by="ticker",
                        auto_adjust=False, progress=False, threads=True)
     frames = {}
     for t in tickers:
@@ -98,6 +103,14 @@ def extract_coingecko():
     return {"ok": False, "coins": 0}
 
 
+def optional(fn, interval):
+    try:
+        return fn(interval)
+    except Exception as exc:  # noqa: BLE001
+        print(f"yahoo {interval}: FAILED ({exc}); continuing without it", file=sys.stderr)
+        return {"error": str(exc)[:200]}
+
+
 def main():
     os.makedirs(RAW_DIR, exist_ok=True)
     log = {
@@ -105,6 +118,9 @@ def main():
         "period": PERIOD,
         "yahoo_1d": extract_yahoo("1d"),
         "yahoo_1h": extract_yahoo("1h"),
+        # Short intervals only feed the Journal chart: a failure must not stop the daily build
+        "yahoo_15m": optional(extract_yahoo, "15m"),
+        "yahoo_5m": optional(extract_yahoo, "5m"),
         "coingecko": extract_coingecko(),
     }
     with open(os.path.join(RAW_DIR, "extract_log.json"), "w", encoding="utf-8") as f:

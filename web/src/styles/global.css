@@ -1159,6 +1159,7 @@ code {
 .trade-chart-canvas { height: 420px; }
 .trade-chart .chart-note { margin-top: 10px; }
 .trade-chart { scroll-margin-top: 76px; }
+.trade-chart-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .marker-key.entry { color: var(--series-1); }
 .marker-key.exit { color: var(--series-4); }
 

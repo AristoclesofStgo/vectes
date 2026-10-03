@@ -7,6 +7,8 @@ Output: assets.json          catalog + crypto fundamentals
         prices_1d.json       daily closes of every asset on one aligned calendar
         candles/1d/<ID>.json daily OHLCV
         candles/4h/<ID>.json 4h OHLCV aggregated from hourly bars
+        candles/1h, 15m, 5m/<ID>.json  intraday OHLCV for the Journal trade chart
+                             (1 year, 60 days and 30 days: Yahoo's intraday limits)
         pipeline.json        6h snapshots captured by the AWS pipeline + reconciliation vs Yahoo
         quality.json         coverage and data quality metrics for the Data Lab
 
@@ -52,8 +54,11 @@ def read_json(path, default=None):
 
 
 # ── Load ───────────────────────────────────────────────────
-def load_bars(interval):
-    df = pd.read_csv(os.path.join(RAW_DIR, f"yahoo_{interval}.csv"))
+def load_bars(interval, required=True):
+    path = os.path.join(RAW_DIR, f"yahoo_{interval}.csv")
+    if not required and not os.path.exists(path):
+        return None
+    df = pd.read_csv(path)
     df["time"] = pd.to_datetime(df["time"], utc=True)
     return df.sort_values(["asset", "time"])
 
@@ -218,6 +223,7 @@ def build():
     assets = asset_dicts()
     daily  = load_bars("1d")
     hourly = load_bars("1h")
+    intraday = {"15m": load_bars("15m", required=False), "5m": load_bars("5m", required=False)}
     validate(daily, assets)
 
     previous_assets = read_json(os.path.join(OUT_DIR, "assets.json"))
@@ -237,6 +243,18 @@ def build():
             "asset": a["id"], "interval": "1d", "columns": CANDLE_COLUMNS, "data": rows_1d})
         sizes[f"candles/4h/{a['id']}.json"] = write(f"candles/4h/{a['id']}.json", {
             "asset": a["id"], "interval": "4h", "columns": CANDLE_COLUMNS, "data": rows_4h})
+
+        # Intraday candles for the Journal chart, written as Yahoo delivers them
+        intraday_bars = {"1h": hourly[hourly["asset"] == a["id"]]}
+        for iv, frame in intraday.items():
+            if frame is not None:
+                intraday_bars[iv] = frame[frame["asset"] == a["id"]]
+        for iv, bars in intraday_bars.items():
+            if bars.empty:
+                continue
+            rows, _ = to_candles(bars.drop_duplicates("time", keep="last"), has_volume)
+            sizes[f"candles/{iv}/{a['id']}.json"] = write(f"candles/{iv}/{a['id']}.json", {
+                "asset": a["id"], "interval": iv, "columns": CANDLE_COLUMNS, "data": rows})
 
         coverage.append({
             "asset":     a["id"],
@@ -301,6 +319,9 @@ def build():
     c1 = sum(v for k, v in sizes.items() if k.startswith("candles/1d"))
     c4 = sum(v for k, v in sizes.items() if k.startswith("candles/4h"))
     print(f"  candles/1d/*     {c1 / 1024:7.1f} KB\n  candles/4h/*     {c4 / 1024:7.1f} KB")
+    for iv in ("1h", "15m", "5m"):
+        size = sum(v for k, v in sizes.items() if k.startswith(f"candles/{iv}/"))
+        print(f"  candles/{iv}/*{' ' * (8 - len(iv))}{size / 1024:7.1f} KB")
 
 
 if __name__ == "__main__":

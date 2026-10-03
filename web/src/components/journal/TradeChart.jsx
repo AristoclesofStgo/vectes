@@ -5,12 +5,30 @@ import { rowsToBars } from '../../lib/currency.js'
 import { pricePrecision } from '../../lib/format.js'
 import { netPnl } from '../../lib/journalStats.js'
 
-const BAR = 4 * 3600
+// Candle sets for the Journal chart. Yahoo keeps short intervals for a limited window,
+// so 15m and 5m only reach back 60 and 30 days.
+const INTERVALS = [
+  { id: '5m', label: '5M', seconds: 300, days: 30 },
+  { id: '15m', label: '15M', seconds: 900, days: 60 },
+  { id: '1h', label: '1H', seconds: 3600, days: 365 },
+  { id: '4h', label: '4H', seconds: 14400, days: 365 },
+]
+const DEFAULT_INTERVAL = '4h'
+const INTERVAL_NAMES = {'5m': '5-minute', '15m': '15-minute', '1h': '1-hour', '4h': '4-hour'}
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
-// Start of the 4h bar containing t (seconds), or null when t is outside the candles
-function barTime(bars, t) {
-  if (!bars.length || t < bars[0].time || t >= bars.at(-1).time + BAR) return null
+// Finest interval that shows a trade with some context and still covers its date
+function intervalFor(trade) {
+  const holdMin = (trade.closeMs - trade.openMs) / 60000
+  const ageDays = (Date.now() - trade.openMs) / 86400000
+  const wanted = holdMin < 90 ? '5m' : holdMin < 6 * 60 ? '15m' : holdMin < 3 * 1440 ? '1h' : '4h'
+  const start = INTERVALS.findIndex((iv) => iv.id === wanted)
+  return INTERVALS.slice(start).find((iv) => ageDays < iv.days - 1)?.id ?? DEFAULT_INTERVAL
+}
+
+// Start of the bar containing t (seconds), or null when t is outside the candles
+function barTime(bars, t, barSeconds) {
+  if (!bars.length || t < bars[0].time || t >= bars.at(-1).time + barSeconds) return null
   let lo = 0, hi = bars.length - 1
   while (lo < hi) {
     const mid = (lo + hi + 1) >> 1
@@ -27,6 +45,11 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
   const markersRef = useRef(null)
   const [bars, setBars] = useState(null)
   const [failed, setFailed] = useState(false)
+  const [intervalId, setIntervalId] = useState(DEFAULT_INTERVAL)
+  const iv = INTERVALS.find((x) => x.id === intervalId)
+
+  // "Show on chart" opens the trade on an interval that suits its length
+  useEffect(() => { if (focus) setIntervalId(intervalFor(focus)) }, [focus])
 
   // Assets the user actually traded that have Vectes candles, most traded first
   const traded = useMemo(() => {
@@ -55,12 +78,12 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
     let alive = true
     setBars(null)
     setFailed(false)
-    loadJson(`candles/4h/${asset}.json`).then(
+    loadJson(`candles/${intervalId}/${asset}.json`).then(
       (json) => alive && setBars(rowsToBars(json.data)),
       () => alive && setFailed(true),
     )
     return () => { alive = false }
-  }, [asset])
+  }, [asset, intervalId])
 
   // Candles + theme
   useEffect(() => {
@@ -98,8 +121,8 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
     const markers = []
     let outside = 0
     for (const t of assetTrades) {
-      const open = barTime(bars, t.openMs / 1000)
-      const close = barTime(bars, t.closeMs / 1000)
+      const open = barTime(bars, t.openMs / 1000, iv.seconds)
+      const close = barTime(bars, t.closeMs / 1000, iv.seconds)
       if (open == null || close == null) { outside++; continue }
       const focused = focus?.id === t.id
       const size = focused ? 2 : 1
@@ -114,7 +137,7 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
     }
     markers.sort((a, b) => a.time - b.time)
     return { markers, outside }
-  }, [bars, assetTrades, focus, money, theme]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [bars, assetTrades, focus, money, theme, iv]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => { markersRef.current?.setMarkers(plotted.markers) }, [plotted])
 
@@ -122,14 +145,15 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
   useEffect(() => {
     const chart = chartRef.current
     if (!chart || !bars?.length || !seriesRef.current) return
-    const inRange = assetTrades.filter((t) => barTime(bars, t.openMs / 1000) != null)
+    const inRange = assetTrades.filter((t) => barTime(bars, t.openMs / 1000, iv.seconds) != null)
     const target = focus?.asset_id === asset ? [focus] : inRange
     if (!target.length) { chart.timeScale().fitContent(); return }
     const from = Math.min(...target.map((t) => t.openMs / 1000))
     const to = Math.max(...target.map((t) => t.closeMs / 1000))
-    const pad = Math.max(3 * 86400, (to - from) * 0.15)
+    // Context around the trades: about 30 bars of the current interval, or 15% of the span
+    const pad = Math.max(iv.seconds * 30, (to - from) * 0.15)
     chart.timeScale().setVisibleRange({ from: Math.max(bars[0].time, from - pad), to: Math.min(bars.at(-1).time, to + pad) })
-  }, [focus, bars, asset, assetTrades, plotted])
+  }, [focus, bars, asset, assetTrades, plotted, iv])
 
   const unmapped = trades.length - trades.filter((t) => t.asset_id).length
 
@@ -140,16 +164,25 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
           <h2>Trades on the chart</h2>
           <span className="muted small">
             <span className="marker-key entry" aria-hidden="true">▲</span> entry ·{' '}
-            <span className="marker-key exit" aria-hidden="true">●</span> exit · 4-hour candles
+            <span className="marker-key exit" aria-hidden="true">●</span> exit · {INTERVAL_NAMES[iv.id]} candles
           </span>
         </div>
         {traded.length > 0 && (
-          <label className="field">
-            <span className="field-label">Asset</span>
-            <select value={asset ?? ''} onChange={(e) => { onFocus(null); setPicked(e.target.value) }}>
-              {traded.map((id) => <option key={id} value={id}>{assets[id]?.name ? `${id} · ${assets[id].name}` : id}</option>)}
-            </select>
-          </label>
+          <div className="trade-chart-controls">
+            <div className="segmented" role="radiogroup" aria-label="Candle interval">
+              {INTERVALS.map((x) => (
+                <button key={x.id} role="radio" aria-checked={intervalId === x.id} className={intervalId === x.id ? 'active' : ''} onClick={() => setIntervalId(x.id)}>
+                  {x.label}
+                </button>
+              ))}
+            </div>
+            <label className="field">
+              <span className="field-label">Asset</span>
+              <select value={asset ?? ''} onChange={(e) => { onFocus(null); setPicked(e.target.value) }}>
+                {traded.map((id) => <option key={id} value={id}>{assets[id]?.name ? `${id} · ${assets[id].name}` : id}</option>)}
+              </select>
+            </label>
+          </div>
         )}
       </div>
       <div ref={containerRef} className="trade-chart-canvas" />
@@ -157,7 +190,13 @@ export default function TradeChart({ trades, focus, onFocus, assets, money, them
       {failed && <p className="card error">Could not load the candles for {asset}.</p>}
       {(plotted.outside > 0 || unmapped > 0) && (
         <p className="muted small chart-note">
-          {plotted.outside > 0 && <>{plotted.outside} {asset} trade{plotted.outside > 1 ? 's are' : ' is'} outside the candle history. Candles refresh daily after the US close, so today's trades appear tomorrow. </>}
+          {plotted.outside > 0 && (
+            <>
+              {plotted.outside} {asset} trade{plotted.outside > 1 ? 's are' : ' is'} outside the {INTERVAL_NAMES[iv.id]} history
+              {iv.days < 365 ? ` (the last ${iv.days} days; pick a longer interval for older trades)` : ''}.
+              {' '}Candles refresh daily after the US close, so today's trades appear tomorrow.{' '}
+            </>
+          )}
           {unmapped > 0 && <>{unmapped} trade{unmapped > 1 ? 's use symbols' : ' uses a symbol'} without Vectes candles (still counted in every statistic).</>}
         </p>
       )}
