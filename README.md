@@ -10,6 +10,8 @@ An end-to-end data project in three stages. It started as **[Aurum](https://gith
 
 Try it without signing up: **Try demo** creates a 7-day account with sample trades built from the real candles.
 
+**Data findings report → [docs/FINDINGS.md](docs/FINDINGS.md)**: requirements, architecture, the data-quality issues found in each pipeline, reconciliation against a reference source and the verification of the journal statistics.
+
 ## Trading journal
 
 ![Journal dashboard](docs/screenshots/journal.png)
@@ -31,7 +33,7 @@ Try it without signing up: **Try demo** creates a 7-day account with sample trad
 - **Cross-currency pricing** — view any asset in USD, EUR, GBP, JPY, CHF, CAD, MXN, BRL, **gold ounces** or **bitcoin**, converted at each bar's exchange rate.
 - **Portfolio simulator** — lump sum or DCA, four rebalancing rules, benchmarks, Sharpe ratio, drawdowns, P&L attribution and an efficient frontier. Every configuration is a shareable URL.
 - **Cross-asset analysis** — correlation heatmap, risk vs. return, rolling correlation for any pair, and classic ratios (gold/silver, Brent–WTI, bitcoin in gold…).
-- **Data Lab** — pipeline architecture, data quality report, reconciliation against a reference source, a data dictionary and a **DuckDB-WASM SQL playground** that runs entirely in the browser.
+- **Data Lab** — a **DuckDB-WASM SQL playground** that runs entirely in the browser, history coverage and a data dictionary. Pipeline architecture, data quality and reconciliation are documented in the [findings report](docs/FINDINGS.md).
 - **Self-refreshing at zero cost** — a scheduled GitHub Action extracts, validates and publishes new data every day; if a source fails, the deploy stops and the last good version stays online.
 
 ## Screenshots
@@ -42,9 +44,9 @@ Try it without signing up: **Try demo** creates a 7-day account with sample trad
 |---|---|
 | ![Portfolio simulator](docs/screenshots/portfolio.png) | ![Correlation heatmap and risk vs. return](docs/screenshots/analysis.png) |
 
-| Data Lab · SQL playground | Data Lab · pipeline & data quality |
+| Data Lab · SQL playground | Journal · trades on the chart |
 |---|---|
-| ![SQL playground](docs/screenshots/sql.png) | ![Pipeline architecture and data quality](docs/screenshots/datalab.png) |
+| ![SQL playground](docs/screenshots/sql.png) | ![Trades on the chart](docs/screenshots/journal-chart.png) |
 
 <p align="center"><img src="docs/screenshots/mobile.png" alt="Vectes on a phone" width="280"></p>
 
@@ -114,6 +116,8 @@ Security was tested with two real users against the live project: neither can re
 One year of daily bars plus hourly bars (aggregated to 4-hour candles) for every asset: about 2.5 MB of JSON, loaded per asset on demand.
 
 ## Data quality: what the data taught me
+
+A summary; the full evidence, per-table counts and reconciliation results are in the [findings report](docs/FINDINGS.md).
 
 Cleaning and validating the data surfaced several real issues, each documented and fixed in code:
 
