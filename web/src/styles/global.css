@@ -486,12 +486,19 @@ select option, select optgroup { background: var(--surface); color: var(--text);
 }
 .watchlist-row:hover { background: var(--surface-2); }
 .watchlist-row.active { background: var(--accent-soft); border-left-color: var(--accent); }
+.watchlist-asset { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .watchlist-name { display: flex; flex-direction: column; min-width: 0; }
 .watchlist-name .small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .watchlist-quote { display: flex; flex-direction: column; align-items: flex-end; font-variant-numeric: tabular-nums; }
 
 .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
 .detail-head h2 { font-size: 1.125rem; }
+.detail-title { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+/* Asset logos: always round (flags are square SVGs) */
+.asset-logo { flex-shrink: 0; display: inline-block; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent); }
+.asset-logo.placeholder { background: var(--surface-2); }
+.legend-title { display: flex; align-items: center; gap: 6px; }
 .hero { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
 .hero-value { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; }
 .detail .note { margin-top: 14px; }
@@ -788,7 +795,7 @@ code {
   text-transform: uppercase;
 }
 
-.hero {
+.home-hero {
   width: 100%;
   max-width: var(--max-width);
   margin: 0 auto;
@@ -799,7 +806,7 @@ code {
   gap: 56px;
 }
 .hero-copy { display: flex; flex-direction: column; gap: 20px; }
-.hero h1 {
+.home-hero h1 {
   font-family: var(--font-brand);
   font-size: clamp(2.25rem, 4.6vw, 3.5rem);
   line-height: 1.08;
@@ -838,7 +845,7 @@ code {
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
 }
-.stat {
+.home-stat {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -847,18 +854,18 @@ code {
   border-radius: var(--radius);
   background: var(--surface);
 }
-.stat strong { font-family: var(--font-brand); font-size: 1.75rem; line-height: 1.1; }
-.stat span { font-size: 0.875rem; }
+.home-stat strong { font-family: var(--font-brand); font-size: 1.75rem; line-height: 1.1; }
+.home-stat span { font-size: 0.875rem; }
 
-.section {
+.home-section {
   width: 100%;
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 96px var(--gutter) 0;
 }
-.section-head { display: flex; flex-direction: column; gap: 12px; max-width: 680px; margin-bottom: 40px; }
-.section-head h2, .cta h2 { font-family: var(--font-brand); font-size: clamp(1.625rem, 3vw, 2.25rem); letter-spacing: -0.01em; line-height: 1.15; }
-.section-head p { font-size: 1.0625rem; }
+.home-section-head { display: flex; flex-direction: column; gap: 12px; max-width: 680px; margin-bottom: 40px; }
+.home-section-head h2, .cta h2 { font-family: var(--font-brand); font-size: clamp(1.625rem, 3vw, 2.25rem); letter-spacing: -0.01em; line-height: 1.15; }
+.home-section-head p { font-size: 1.0625rem; }
 
 .feature-list { display: flex; flex-direction: column; gap: 72px; }
 .feature {
@@ -904,7 +911,7 @@ code {
   padding: 88px var(--gutter);
 }
 .journal-band .eyebrow { color: #6cc28a; }
-.journal-band .section-head p { color: #b9c6d8; }
+.journal-band .home-section-head p { color: #b9c6d8; }
 .steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .step {
   display: flex;
@@ -1003,7 +1010,7 @@ code {
 }
 
 @media (max-width: 960px) {
-  .hero { grid-template-columns: 1fr; padding-top: 40px; gap: 40px; }
+  .home-hero { grid-template-columns: 1fr; padding-top: 40px; gap: 40px; }
   .hero-media { width: min(100%, 340px); aspect-ratio: 4 / 5; }
   .stats-band { grid-template-columns: 1fr 1fr; }
   .feature, .feature:nth-child(even) { grid-template-columns: 1fr; gap: 20px; }
@@ -1013,7 +1020,7 @@ code {
 }
 @media (max-width: 760px) {
   .home .header-inner { height: 60px; flex-wrap: nowrap; padding-top: 0; }
-  .section { padding-top: 72px; }
+  .home-section { padding-top: 72px; }
   .feature-list { gap: 48px; }
   .journal-band { margin-top: 80px; }
   .band-inner { padding: 64px var(--gutter); }

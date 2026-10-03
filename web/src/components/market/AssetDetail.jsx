@@ -1,5 +1,6 @@
 import { formatCompact, formatDate, formatMoney, formatNumber, pricePrecision } from '../../lib/format.js'
 import Change from './Change.jsx'
+import AssetLogo from '../AssetLogo.jsx'
 
 function Stat({ label, children }) {
   return (
@@ -23,9 +24,12 @@ export default function AssetDetail({ asset, stats, currency, converted, ratePai
   return (
     <section className="card detail" aria-label={`${asset.name} details`}>
       <div className="detail-head">
-        <div>
-          <h2>{asset.name}</h2>
-          <span className="muted small">{converted ? `${asset.id}/${currency.id} · priced in ${currency.label}` : asset.pair}</span>
+        <div className="detail-title">
+          <AssetLogo id={asset.id} size={36} />
+          <div>
+            <h2>{asset.name}</h2>
+            <span className="muted small">{converted ? `${asset.id}/${currency.id} · priced in ${currency.label}` : asset.pair}</span>
+          </div>
         </div>
         <span className="badge neutral">{asset.ticker}</span>
       </div>

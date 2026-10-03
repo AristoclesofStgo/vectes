@@ -1,5 +1,6 @@
 import { formatPrice } from '../../lib/format.js'
 import Change from './Change.jsx'
+import AssetLogo from '../AssetLogo.jsx'
 
 export default function Watchlist({ categories, items, selected, onSelect }) {
   return (
@@ -16,9 +17,12 @@ export default function Watchlist({ categories, items, selected, onSelect }) {
                 onClick={() => onSelect(a.id)}
                 aria-pressed={a.id === selected}
               >
-                <span className="watchlist-name">
-                  <span className="asset-id">{a.id}</span>
-                  <span className="muted small">{a.name}</span>
+                <span className="watchlist-asset">
+                  <AssetLogo id={a.id} size={26} />
+                  <span className="watchlist-name">
+                    <span className="asset-id">{a.id}</span>
+                    <span className="muted small">{a.name}</span>
+                  </span>
                 </span>
                 <span className="watchlist-quote">
                   <span className="num">{formatPrice(a.last)}</span>
