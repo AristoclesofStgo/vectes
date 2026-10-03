@@ -8,6 +8,8 @@ import ReplayControls from '../components/market/ReplayControls.jsx'
 import TickerTape from '../components/market/TickerTape.jsx'
 import Toolbar from '../components/market/Toolbar.jsx'
 import Watchlist from '../components/market/Watchlist.jsx'
+import EconomicCalendar from '../components/market/EconomicCalendar.jsx'
+import MarketNews from '../components/market/MarketNews.jsx'
 import { useMarketData } from '../hooks/useMarketData.js'
 import { useReplay } from '../hooks/useReplay.js'
 import { currencyById, isConvertible } from '../lib/currency.js'
@@ -22,6 +24,8 @@ const DEFAULT_ASSET = 'BTC'
 export default function Market() {
   const assetsJson = useJson('assets.json')
   const pricesJson = useJson('prices_1d.json')
+  const calendarJson = useJson('calendar.json')
+  const newsJson = useJson('news.json')
   const [params, setParams] = useSearchParams()
   const chartRef = useRef(null)
   const [hoverIdx, setHoverIdx] = useState(null)
@@ -134,45 +138,50 @@ export default function Market() {
       )}
 
       <div className="market-grid">
-        <section className={`card chart-card${loading && data ? ' refreshing' : ''}`} aria-label="Price chart">
-          <div className="chart-frame">
-            {data && (
-              <ChartLegend
-                asset={asset}
-                interval={interval}
-                currencyId={data.converted ? currency.id : null}
-                bar={bars[idx]}
-                prevBar={bars[idx - 1]}
-                values={legendValues}
-                compare={compareValue}
-                precision={precision}
+        <div className="market-main">
+          <section className={`card chart-card${loading && data ? ' refreshing' : ''}`} aria-label="Price chart">
+            <div className="chart-frame">
+              {data && (
+                <ChartLegend
+                  asset={asset}
+                  interval={interval}
+                  currencyId={data.converted ? currency.id : null}
+                  bar={bars[idx]}
+                  prevBar={bars[idx - 1]}
+                  values={legendValues}
+                  compare={compareValue}
+                  precision={precision}
+                  showVolume={hasVolume && showVolume}
+                />
+              )}
+              <PriceChart
+                ref={chartRef}
+                dataKey={data?.key}
+                bars={bars}
+                cursor={replay.active ? replay.cursor : null}
+                indicators={indicators}
+                enabled={enabled}
+                compareBars={compareAsset ? data?.compareBars : null}
+                compareLabel={compareAsset?.id}
                 showVolume={hasVolume && showVolume}
+                precision={precision}
+                theme={theme}
+                onHover={setHoverIdx}
               />
-            )}
-            <PriceChart
-              ref={chartRef}
-              dataKey={data?.key}
-              bars={bars}
-              cursor={replay.active ? replay.cursor : null}
-              indicators={indicators}
-              enabled={enabled}
-              compareBars={compareAsset ? data?.compareBars : null}
-              compareLabel={compareAsset?.id}
-              showVolume={hasVolume && showVolume}
-              precision={precision}
-              theme={theme}
-              onHover={setHoverIdx}
-            />
-          </div>
-          <ReplayControls replay={replay} times={times} currentTime={bars[visibleCount - 1]?.time} intraday={interval === '4h'} />
-          <p className="chart-note muted small">
-            {compareAsset
-              ? 'Percentage scale: both series are rebased to the first visible bar. '
-              : ''}
-            {interval === '4h' ? '4H candles aggregated from Yahoo Finance hourly bars (UTC).' : 'Daily candles from Yahoo Finance (UTC).'}
-            {asset && currencyId !== 'USD' && !currencyAsset ? ` Shown in its native quote — ${currencyId} pricing does not apply to this asset.` : ''}
-          </p>
-        </section>
+            </div>
+            <ReplayControls replay={replay} times={times} currentTime={bars[visibleCount - 1]?.time} intraday={interval === '4h'} />
+            <p className="chart-note muted small">
+              {compareAsset
+                ? 'Percentage scale: both series are rebased to the first visible bar. '
+                : ''}
+              {interval === '4h' ? '4H candles aggregated from Yahoo Finance hourly bars (UTC).' : 'Daily candles from Yahoo Finance (UTC).'}
+              {asset && currencyId !== 'USD' && !currencyAsset ? ` Shown in its native quote — ${currencyId} pricing does not apply to this asset.` : ''}
+            </p>
+          </section>
+
+          <EconomicCalendar data={calendarJson.data} asset={asset} />
+          <MarketNews data={newsJson.data} asset={asset} />
+        </div>
 
         <aside className="market-side">
           <AssetDetail

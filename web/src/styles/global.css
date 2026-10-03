@@ -418,6 +418,42 @@ select option, select optgroup { background: var(--surface); color: var(--text);
   align-items: start;
 }
 .market-side { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+.market-main { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+/* ── Market · economic calendar and news ──────────────── */
+.calendar-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.econ-list { max-height: 460px; overflow-y: auto; margin: 0 -20px; padding: 0 20px; scroll-behavior: smooth; }
+.econ-table { font-size: 0.8125rem; }
+.econ-table thead th { position: sticky; top: 0; z-index: 1; background: var(--surface); }
+.econ-day th { padding-top: 14px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); background: var(--surface); }
+.econ-table td { white-space: nowrap; }
+.econ-table .econ-event { white-space: normal; min-width: 220px; }
+.econ-event .badge { margin-left: 8px; }
+.econ-table tr.past td { opacity: 0.7; }
+.econ-table tr.next { background: var(--accent-soft); }
+.econ-time { font-variant-numeric: tabular-nums; color: var(--text-muted); }
+.econ-cur { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.econ-cur img { border-radius: 50%; box-shadow: 0 0 0 1px color-mix(in srgb, var(--text) 10%, transparent); }
+.impact { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; font-size: 0.6875rem; color: var(--text-muted); }
+.impact span { display: block; width: 4px; border-radius: 1px; background: var(--border); }
+.impact span:nth-child(1) { height: 5px; }
+.impact span:nth-child(2) { height: 8px; }
+.impact span:nth-child(3) { height: 12px; }
+.impact-high span.on { background: var(--down); }
+.impact-medium span.on { background: var(--series-4); }
+.impact-low span.on { background: var(--text-muted); }
+.source-note { margin-top: 12px; }
+
+.news-list { margin: 0 -20px; padding: 0; list-style: none; }
+.news-list li + li { border-top: 1px solid var(--border); }
+.news-item { display: flex; flex-direction: column; gap: 4px; padding: 11px 20px; }
+.news-item:hover { background: var(--surface-2); }
+.news-item:hover .news-title { text-decoration: underline; }
+.news-item:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.news-title { font-weight: 500; line-height: 1.4; }
+.news-meta { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.news-assets { display: inline-flex; gap: 3px; }
+.news-more { margin-top: 8px; }
 
 .chart-card { padding: 0; overflow: hidden; transition: opacity 0.2s; }
 .chart-card.refreshing { opacity: 0.55; }
