@@ -39,6 +39,10 @@ jobs:
         run: python scripts/extract_history.py
       - name: Build website datasets
         run: python scripts/build_web_data.py
+      # Calendar and headlines are extras: a failing feed keeps the last published copy
+      - name: Fetch economic calendar and market news
+        run: python scripts/build_market_news.py
+        continue-on-error: true
 
       # ── Build the site ──
       - uses: actions/setup-node@v4
