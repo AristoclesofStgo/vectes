@@ -221,11 +221,6 @@ export default function Home() {
           <div className="section-head">
             <span className="eyebrow">How it's built</span>
             <h2>An end-to-end data engineering project</h2>
-            <p className="muted">
-              Vectes started as Aurum, a serverless ETL on AWS that loaded prices into Snowflake. Today a
-              daily GitHub Actions job extracts, cleans and validates one year of history, and the site
-              is rebuilt from it every evening after the US close.
-            </p>
           </div>
           <dl className="stack">
             {STACK.map(([k, v]) => (
