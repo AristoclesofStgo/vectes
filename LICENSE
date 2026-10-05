@@ -1,0 +1,22 @@
+Copyright (c) 2026 Luis David Montes de Oca Hurtado. All rights reserved.
+
+This repository and everything in it (the published Vectes website, its
+compiled code, data files, documentation, designs and images) is proprietary.
+
+No permission is granted to use, copy, modify, merge, publish, distribute,
+sublicense or sell any part of it, or to create derivative works from it,
+without the prior written permission of the copyright holder. Being able to
+view this repository, and any rights GitHub's Terms of Service grant to view
+or fork it on GitHub, do not grant any further rights.
+
+The only exception is the VectesSync Expert Advisor (downloads/VectesSync.mq4),
+which registered Vectes users may download, install and run in their own
+MetaTrader 4 terminal for the sole purpose of syncing their trades with Vectes.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED. IN NO EVENT SHALL THE COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES
+OR OTHER LIABILITY ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR ITS
+USE.
+
+For permission requests, open an issue at
+https://github.com/AristoclesofStgo/vectes/issues.
