@@ -1,0 +1,1 @@
+import{r as e}from"./data-CCw5VGjE.js";var t=e();function n({title:e,subtitle:n,children:r}){return(0,t.jsxs)(`div`,{className:`page-header`,children:[(0,t.jsxs)(`div`,{children:[(0,t.jsx)(`h1`,{children:e}),n&&(0,t.jsx)(`p`,{className:`muted`,children:n})]}),r&&(0,t.jsx)(`div`,{className:`page-header-actions`,children:r})]})}export{n as t};
